@@ -18,8 +18,8 @@ const STATUS_COLOR: Record<ReservationStatus, { color: string; bg: string; borde
   {
     confirmed: {
       color: 'var(--green)',
-      bg: 'rgba(198,255,61,0.18)',
-      border: 'rgba(198,255,61,0.45)',
+      bg: 'color-mix(in oklab, var(--accent-text) 18%, transparent)',
+      border: 'color-mix(in oklab, var(--accent-text) 45%, transparent)',
       label: 'Confirmada',
     },
     pending: {
@@ -85,7 +85,7 @@ export default function WeekCalendar({
         </div>
       </>
     ),
-    cellBg: d.today ? () => 'rgba(198,255,61,0.03)' : undefined,
+    cellBg: d.today ? () => 'color-mix(in oklab, var(--accent-text) 3%, transparent)' : undefined,
   }))
 
   const overlays: CalendarOverlay[] = days.flatMap((_, dayIdx) => {

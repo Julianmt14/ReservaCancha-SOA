@@ -148,7 +148,7 @@ export default function CanchaAdminDetail({ court, onBack, onUpdated, onDeleted 
           style={{
             background: 'var(--green-soft)',
             color: 'var(--green)',
-            border: '1px solid rgba(198,255,61,0.25)',
+            border: '1px solid color-mix(in oklab, var(--accent-text) 25%, transparent)',
           }}
         >
           {court.name.slice(0, 2).toUpperCase()}

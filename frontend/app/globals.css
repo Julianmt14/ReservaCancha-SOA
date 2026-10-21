@@ -1,95 +1,140 @@
 @import 'tailwindcss';
 
 /*
- * ReservaCancha — "Estadio de noche"
- * Fondo casi negro, superficies grafito verdoso y un solo acento lima neón.
- * Oscuro por defecto (<html data-theme="dark">); el modo claro usa los mismos nombres de token.
+ * ReservaCancha — "Verde botella"
+ * Contenido claro (#F3F6F4 y tarjetas blancas) con franjas en verde botella (#0B4A40) y un
+ * acento menta (#6FD3A8). La página de reserva va en verde oscuro (data-theme="dark" local).
+ * Claro por defecto (<html data-theme="light">); el modo oscuro usa los mismos nombres de token.
  */
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* ─── Tokens: claro ────────────────────────────────────────────────────────── */
-:root {
-  --bg: #f5f6f2;
-  --bg-2: #eceee8;
+/* ─── Tokens: claro (por defecto; data-zona="clara" lo restaura dentro de otra zona) ─── */
+:root,
+[data-zona='clara'] {
+  --botella: #0b4a40;
+  --botella-hover: #0d5a4e;
+  --botella-deep: #083a32;
+  --menta: #6fd3a8;
+
+  --bg: #f3f6f4;
+  --bg-2: #e9f0ed;
   --surface: #ffffff;
-  --surface-2: #f4f6f1;
+  --surface-2: #f6faf8;
   --surface-3: #ffffff;
-  --line: rgba(11, 13, 12, 0.09);
-  --line-2: rgba(11, 13, 12, 0.16);
+  --line: #dde7e3;
+  --line-2: #c8d8d1;
 
-  --text: #0b0d0c;
-  --text-2: #4d5550;
-  --text-3: #7c847f;
+  --text: #10201c;
+  --text-2: #5c746d;
+  --text-3: #869a94;
 
-  --accent: #c6ff3d;
-  --accent-hover: #b5ef25;
-  --accent-ink: #0b0b0b;
-  --accent-text: #4d7c0f;
-  --accent-soft: rgba(132, 204, 22, 0.16);
-  --accent-line: rgba(77, 124, 15, 0.45);
+  --accent: var(--botella);
+  --accent-hover: var(--botella-hover);
+  --accent-ink: #ffffff;
+  --accent-text: var(--botella);
+  --accent-soft: #eef4f2;
+  --accent-line: rgba(11, 74, 64, 0.35);
 
-  --success: #16a34a;
-  --success-soft: rgba(22, 163, 74, 0.12);
-  --warning: #b7791f;
-  --warning-soft: rgba(183, 121, 31, 0.12);
-  --danger: #dc2626;
-  --danger-soft: rgba(220, 38, 38, 0.1);
-  --info: #2563eb;
-  --info-soft: rgba(37, 99, 235, 0.1);
+  --success: #1f8a5b;
+  --success-soft: #e3f6ee;
+  --warning: #946a00;
+  --warning-soft: #fff4d6;
+  --danger: #c8483b;
+  --danger-soft: rgba(200, 72, 59, 0.1);
+  --info: #3d5bc9;
+  --info-soft: #e7ecfa;
 
-  --sh-card: 0 1px 2px rgba(11, 13, 12, 0.04), 0 1px 1px rgba(11, 13, 12, 0.03);
-  --sh-pop: 0 12px 32px -8px rgba(11, 13, 12, 0.18);
-  --scrim: rgba(11, 13, 12, 0.45);
+  /* Marca: líneas de la cancha y manecillas del reloj */
+  --logo-line: var(--botella);
+  --logo-hands: #ffffff;
+
+  --sh-card: 0 1px 2px rgba(16, 32, 28, 0.04);
+  --sh-pop: 0 30px 60px -30px rgba(11, 74, 64, 0.45);
+  --scrim: rgba(6, 20, 17, 0.45);
 
   color-scheme: light;
 }
 
-/* ─── Tokens: oscuro (por defecto) ─────────────────────────────────────────── */
+/* ─── Tokens: oscuro (la página de reserva, o todo si el usuario lo elige) ──── */
 [data-theme='dark'] {
-  --bg: #090c0a;
-  --bg-2: #0d110e;
-  --surface: #111612;
-  --surface-2: #161d18;
-  --surface-3: #1c241e;
-  --line: #222b24;
-  --line-2: #2f3a31;
+  --bg: #061f1b;
+  --bg-2: #08251f;
+  --surface: #0a2c26;
+  --surface-2: #0e3830;
+  --surface-3: #12423a;
+  --line: rgba(234, 243, 240, 0.1);
+  --line-2: rgba(234, 243, 240, 0.18);
 
-  --text: #f2f5f0;
-  --text-2: #97a39a;
-  --text-3: #6b776e;
+  --text: #eaf3f0;
+  --text-2: #9db8b1;
+  --text-3: #6f8c85;
 
-  --accent: #c6ff3d;
-  --accent-hover: #d4ff66;
-  --accent-ink: #0b0b0b;
-  --accent-text: #c6ff3d;
-  --accent-soft: rgba(198, 255, 61, 0.12);
-  --accent-line: rgba(198, 255, 61, 0.4);
+  --accent: #ffffff;
+  --accent-hover: #e6f4ef;
+  --accent-ink: var(--botella);
+  --accent-text: var(--menta);
+  --accent-soft: rgba(111, 211, 168, 0.14);
+  --accent-line: rgba(111, 211, 168, 0.45);
 
-  --success: #22c55e;
-  --success-soft: rgba(34, 197, 94, 0.14);
-  --warning: #f5b942;
-  --warning-soft: rgba(245, 185, 66, 0.14);
-  --danger: #f04d4d;
-  --danger-soft: rgba(240, 77, 77, 0.14);
-  --info: #5b91fe;
-  --info-soft: rgba(91, 145, 254, 0.14);
+  --success: var(--menta);
+  --success-soft: rgba(111, 211, 168, 0.14);
+  --warning: #ffd66e;
+  --warning-soft: rgba(255, 214, 110, 0.14);
+  --danger: #ff8a7a;
+  --danger-soft: rgba(255, 138, 122, 0.14);
+  --info: #9db1ff;
+  --info-soft: rgba(157, 177, 255, 0.14);
 
-  --sh-card: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --sh-pop: 0 30px 60px -30px rgba(0, 0, 0, 0.7);
-  --scrim: rgba(0, 0, 0, 0.6);
+  --logo-line: #ffffff;
+  --logo-hands: var(--botella);
+
+  --sh-card: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --sh-pop: 0 40px 80px -40px rgba(0, 0, 0, 0.8);
+  --scrim: rgba(2, 14, 12, 0.7);
+
+  color-scheme: dark;
+}
+
+/* ─── Franja verde botella (portadas, barra lateral) ─────────────────────── */
+[data-zona='verde'] {
+  --bg: var(--botella);
+  --bg-2: var(--botella-deep);
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-2: rgba(255, 255, 255, 0.12);
+  --surface-3: var(--botella-hover);
+  --line: rgba(255, 255, 255, 0.14);
+  --line-2: rgba(255, 255, 255, 0.26);
+
+  --text: #ffffff;
+  --text-2: #cfe5de;
+  --text-3: #a6cbbf;
+
+  --accent: #ffffff;
+  --accent-hover: #e6f4ef;
+  --accent-ink: var(--botella);
+  --accent-text: var(--menta);
+  --accent-soft: rgba(111, 211, 168, 0.16);
+  --accent-line: rgba(111, 211, 168, 0.5);
+
+  --danger: #ffb4a8;
+  --danger-soft: rgba(255, 180, 168, 0.14);
+
+  --logo-line: #ffffff;
+  --logo-hands: var(--botella);
 
   color-scheme: dark;
 }
 
 /*
- * Alias temporales de los tokens anteriores (navy + verde). Siguen funcionando los
- * style={{ ... var(--panel) }} y las clases bg-panel / text-brand de las pantallas que
- * aún no se migran (panel del dueño, fases 3–4). Retirar en la fase 5.
+ * Alias de los tokens anteriores (navy + verde). Siguen funcionando los style={{ var(--panel) }}
+ * y las clases bg-panel / text-brand de las pantallas del dueño que aún no se migran.
  */
 :root,
-[data-theme='dark'] {
-  --green: var(--accent);
+[data-theme='dark'],
+[data-zona='verde'],
+[data-zona='clara'] {
+  --green: var(--accent-text);
   --green-deep: var(--accent-hover);
   --green-soft: var(--accent-soft);
   --green-line: var(--accent-line);
@@ -132,9 +177,13 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-scrim: var(--scrim);
+  --color-botella: var(--botella);
+  --color-botella-hover: var(--botella-hover);
+  --color-botella-deep: var(--botella-deep);
+  --color-menta: var(--menta);
 
   /* Alias de compatibilidad (bg-panel, text-text-2, text-brand…) */
-  --color-brand: var(--accent);
+  --color-brand: var(--accent-text);
   --color-brand-deep: var(--accent-hover);
   --color-brand-soft: var(--accent-soft);
   --color-brand-line: var(--accent-line);
@@ -151,9 +200,9 @@
   --color-blue: var(--info);
   --color-blue-soft: var(--info-soft);
 
-  /* Tipografía (variables de next/font en app/layout.tsx) */
-  --font-display: var(--font-anton), 'Arial Narrow', ui-sans-serif, sans-serif;
-  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  /* Tipografía: Cabinet Grotesk (Fontshare, en app/layout.tsx) · códigos en Geist Mono */
+  --font-display: 'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Radios, sombras, curvas */
@@ -164,7 +213,7 @@
   --radius-xl: 24px;
   --shadow-card: var(--sh-card);
   --shadow-pop: var(--sh-pop);
-  --shadow-glow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent);
+  --shadow-glow: 0 0 0 4px color-mix(in oklab, var(--accent-text) 22%, transparent);
 
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -173,23 +222,21 @@
 
 /* ─── Utilidades de marca ──────────────────────────────────────────────────── */
 @utility text-display {
-  font-family: var(--font-anton), 'Arial Narrow', ui-sans-serif, sans-serif;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.005em;
-  line-height: 0.92;
+  font-family: 'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
 }
 
 @utility text-overline {
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 @utility num {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
@@ -220,10 +267,10 @@ body {
 }
 
 body {
-  font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  /* 16 px en móvil (evita el zoom de iOS en inputs); el panel denso vuelve a 14 px en escritorio */
+  /* 16 px en móvil (evita el zoom de iOS en inputs); el panel denso baja a 15 px en escritorio */
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -232,18 +279,18 @@ body {
 
 @media (min-width: 1024px) {
   body {
-    font-size: 14px;
+    font-size: 15px;
   }
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--menta);
+  color: var(--botella);
 }
 
 /* scrollbar */

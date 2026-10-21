@@ -97,7 +97,7 @@ export default function OnboardingPage() {
             className="inline-flex items-center justify-center size-14 rounded-2xl mb-4"
             style={{
               background: 'linear-gradient(135deg, var(--green), var(--green-deep))',
-              boxShadow: '0 8px 24px rgba(198,255,61,0.35)',
+              boxShadow: '0 8px 24px color-mix(in oklab, var(--accent-text) 35%, transparent)',
             }}
           >
             <svg

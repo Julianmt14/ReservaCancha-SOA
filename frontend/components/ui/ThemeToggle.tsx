@@ -12,11 +12,11 @@ function subscribe(cb: () => void) {
 }
 
 function getTheme(): Theme {
-  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
 }
 
 export function useTheme() {
-  const theme = useSyncExternalStore(subscribe, getTheme, () => 'dark' as Theme)
+  const theme = useSyncExternalStore(subscribe, getTheme, () => 'light' as Theme)
   function setTheme(t: Theme) {
     document.documentElement.dataset.theme = t
     try {

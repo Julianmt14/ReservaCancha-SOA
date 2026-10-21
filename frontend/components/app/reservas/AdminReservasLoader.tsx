@@ -41,7 +41,11 @@ function addDays(d: Date, n: number) {
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   PENDING: { label: 'Pendiente', color: 'var(--amber)', bg: 'rgba(242,181,68,0.14)' },
   CONFIRMED: { label: 'Confirmada', color: 'var(--blue)', bg: 'rgba(76,141,245,0.14)' },
-  COMPLETED: { label: 'Completada', color: 'var(--green)', bg: 'rgba(198,255,61,0.14)' },
+  COMPLETED: {
+    label: 'Completada',
+    color: 'var(--green)',
+    bg: 'color-mix(in oklab, var(--accent-text) 14%, transparent)',
+  },
   CANCELLED: { label: 'Cancelada', color: 'var(--red)', bg: 'rgba(229,72,77,0.14)' },
 }
 
@@ -472,7 +476,10 @@ function AgendaTab({
           <span className="flex items-center gap-1.5">
             <span
               className="size-2.5 rounded-sm"
-              style={{ background: 'rgba(198,255,61,0.3)', border: '1px solid rgba(198,255,61,0.6)' }}
+              style={{
+                background: 'color-mix(in oklab, var(--accent-text) 30%, transparent)',
+                border: '1px solid color-mix(in oklab, var(--accent-text) 60%, transparent)',
+              }}
             />
             Completada
           </span>

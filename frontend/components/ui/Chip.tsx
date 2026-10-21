@@ -6,7 +6,7 @@ interface ChipProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode
 }
 
-/** Píldora de filtro / opción (deporte, franja horaria…). La activa va en lima. */
+/** Píldora de filtro / opción (deporte, franja horaria…). La activa va en el acento (verde botella; blanco sobre fondo oscuro). */
 export default function Chip({ selected, size = 'md', icon, className, children, ...rest }: ChipProps) {
   return (
     <button
@@ -40,7 +40,7 @@ interface TimeChipProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElemen
   compact?: boolean
 }
 
-/** Celda de horario: hora en mono + precio. Ocupado: tachado y atenuado. Seleccionado: lima. */
+/** Celda de horario: hora en mono + precio. Ocupado: tachado y atenuado. Seleccionado: acento. */
 export function TimeChip({ time, caption, state, compact, className, ...rest }: TimeChipProps) {
   const disabled = state === 'busy' || state === 'closed'
   return (

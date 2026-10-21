@@ -1,5 +1,6 @@
 'use client'
 
+import clsx from 'clsx'
 import { usePathname } from 'next/navigation'
 import { IconSearch, IconBell, IconPlus } from '@/components/app/icons'
 import { useAuth } from '@/lib/auth/context'
@@ -20,10 +21,19 @@ export default function Topbar({ onAccountClick }: { onAccountClick: () => void 
   const title = pageTitle(pathname, isPlayer)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/70">
+    <header
+      // El jugador ve la barra dentro de la franja verde de cada portada (propuesta v3)
+      data-zona={isPlayer ? 'verde' : undefined}
+      className={clsx(
+        'sticky top-0 z-40 border-b text-fg',
+        isPlayer
+          ? 'border-transparent bg-bg'
+          : 'border-line bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/70'
+      )}
+    >
       {/* Móvil */}
       <div className="flex h-14 items-center gap-3 px-4 lg:hidden">
-        <Logo className="text-[22px]" />
+        <Logo className="text-[19px]" />
         <div className="flex-1" />
         {!isPlayer && (
           <Button size="sm" onClick={openNewReserva} aria-label="Nueva reserva" className="w-9 px-0">

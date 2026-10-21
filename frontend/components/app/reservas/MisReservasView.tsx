@@ -3,23 +3,20 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import clsx from 'clsx'
+import { useAuth } from '@/lib/auth/context'
 import { getMyBookings, cancelBooking, type BookingResponse } from '@/lib/api/bookings'
 import { getCourts, type CourtResponse } from '@/lib/api/courts'
 import { ESTABLISHMENT } from '@/lib/api/businesses'
-import Segmented from '@/components/ui/Segmented'
 import Button, { buttonClasses } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/Badge'
 import Sheet from '@/components/ui/Sheet'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
-import { IconCard, IconRepeat, IconWhatsApp, IconCalendarPlus } from '@/components/app/icons'
-import BookingTicket from '@/components/app/booking/BookingTicket'
+import { IconCard, IconRepeat, IconWhatsApp, IconCalendarPlus, IconPin } from '@/components/app/icons'
+import CourtArt from '@/components/app/booking/CourtArt'
 import CheckoutSheet from '@/components/app/booking/CheckoutSheet'
-import { downloadIcs, whatsappShareUrl } from '@/components/app/booking/share'
-import { formatCOP, formatCountdown, formatDuration, formatHour, hourOf, parseIsoDate } from '@/lib/format'
-
-type Tab = 'proximas' | 'pasadas' | 'canceladas'
+import { downloadIcs, mapsUrl, whatsappShareUrl } from '@/components/app/booking/share'
+import { addDays, formatCOP, formatDayLong, formatDuration, formatHour, hourOf, isoDate } from '@/lib/format'
 
 const VENUE = ESTABLISHMENT.name
 const ADDRESS = ESTABLISHMENT.address
@@ -29,36 +26,40 @@ function totalOf(b: BookingResponse, courts: Map<number, CourtResponse>): number
   return c ? c.pricePerHour * (hourOf(b.endAt) - hourOf(b.startAt)) : null
 }
 
-/** Fecha en bloque: día de la semana, número grande y mes. */
-function DateBlock({ iso, muted }: { iso: string; muted?: boolean }) {
-  const d = parseIsoDate(iso)
-  return (
-    <div
-      className={clsx(
-        'grid w-16 shrink-0 content-center justify-items-center gap-1 rounded-[14px] border border-line py-2.5',
-        muted ? 'bg-bg-2' : 'bg-surface-2'
-      )}
-    >
-      <span className="text-overline text-fg-2">
-        {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
-      </span>
-      <span className="text-display text-[30px] leading-none text-fg">{d.getDate()}</span>
-      <span className="text-overline text-fg-3">
-        {d.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '')}
-      </span>
-    </div>
-  )
+/** "Mañana, 20:00" · "Sábado 17 de octubre, 19:00" */
+function when(b: BookingResponse, now: number): string {
+  const iso = b.startAt.slice(0, 10)
+  const today = new Date(now)
+  const long = formatDayLong(iso)
+  const day =
+    iso === isoDate(today)
+      ? 'Hoy'
+      : iso === isoDate(addDays(today, 1))
+        ? 'Mañana'
+        : long.charAt(0).toUpperCase() + long.slice(1)
+  return `${day}, ${formatHour(hourOf(b.startAt))}`
+}
+
+/** Cuenta regresiva con segundos, como en la propuesta: "1 d 04 h 12 min 09 s". */
+function countdown(ms: number): string {
+  let s = Math.max(0, Math.floor(ms / 1000))
+  const d = Math.floor(s / 86400)
+  s %= 86400
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d ? `${d} d ` : ''}${pad(Math.floor(s / 3600))} h ${pad(Math.floor((s % 3600) / 60))} min ${pad(s % 60)} s`
 }
 
 export default function MisReservasView() {
   const router = useRouter()
+  const { user } = useAuth()
   const [data, setData] = useState<{
     bookings: BookingResponse[]
     courts: Map<number, CourtResponse>
   } | null>(null)
   const [error, setError] = useState(false)
   const [version, setVersion] = useState(0)
-  const [tab, setTab] = useState<Tab>('proximas')
+  const [now, setNow] = useState(() => Date.now())
+  const [players, setPlayers] = useState(10)
   const [toCancel, setToCancel] = useState<BookingResponse | null>(null)
   const [canceling, setCanceling] = useState(false)
   const [pay, setPay] = useState<{ key: number; booking: BookingResponse } | null>(null)
@@ -78,16 +79,30 @@ export default function MisReservasView() {
     }
   }, [version])
 
+  // Reloj de la cuenta regresiva
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
   const reload = () => setVersion((v) => v + 1)
 
-  const now = new Date().getTime()
   const bookings = data?.bookings ?? []
   const courts = data?.courts ?? new Map<number, CourtResponse>()
   const upcoming = bookings.filter((b) => b.status !== 'CANCELLED' && new Date(b.endAt).getTime() >= now)
   const past = bookings.filter((b) => b.status !== 'CANCELLED' && new Date(b.endAt).getTime() < now).reverse()
   const cancelled = bookings.filter((b) => b.status === 'CANCELLED').reverse()
   const [next, ...rest] = upcoming
-  const list = tab === 'proximas' ? rest : tab === 'pasadas' ? past : cancelled
+
+  const year = new Date(now).getFullYear()
+  const playedThisYear = past.filter((b) => new Date(b.startAt).getFullYear() === year).length
+  const distinctCourts = new Set(bookings.filter((b) => b.status !== 'CANCELLED').map((b) => b.courtId)).size
+  const pending = upcoming.filter((b) => b.status === 'PENDING').length
+  const firstName = user?.fullName?.split(' ')[0] ?? ''
+
+  const nextTotal = next ? totalOf(next, courts) : null
+  const nextStarted = next ? new Date(next.startAt).getTime() <= now : false
+  const each = nextTotal != null ? Math.ceil(nextTotal / players / 500) * 500 : null
 
   async function confirmCancel() {
     if (!toCancel) return
@@ -122,13 +137,14 @@ export default function MisReservasView() {
   }
 
   function actions(b: BookingResponse, upcomingBooking: boolean) {
-    const pending = b.status === 'PENDING'
+    const pendingPay = b.status === 'PENDING'
+    const total = totalOf(b, courts)
     return (
       <div className="flex flex-wrap gap-2">
-        {upcomingBooking && pending && (
-          <Button size="sm" onClick={() => openPay(b)} className="shrink-0">
+        {upcomingBooking && pendingPay && (
+          <Button size="sm" onClick={() => openPay(b)} className="shrink-0 font-extrabold">
             <IconCard className="size-4" />
-            Pagar {totalOf(b, courts) != null ? formatCOP(totalOf(b, courts)!) : ''}
+            Pagar {total != null ? formatCOP(total) : ''}
           </Button>
         )}
         {upcomingBooking && (
@@ -136,7 +152,7 @@ export default function MisReservasView() {
             href={whatsappShareUrl(b, VENUE)}
             target="_blank"
             rel="noopener noreferrer"
-            className={buttonClasses('secondary', 'sm', 'shrink-0')}
+            className={buttonClasses('secondary', 'sm', 'shrink-0 font-bold')}
           >
             <IconWhatsApp className="size-4 text-[#25D366]" />
             Compartir
@@ -146,7 +162,7 @@ export default function MisReservasView() {
           <Button
             variant="secondary"
             size="sm"
-            className="shrink-0"
+            className="shrink-0 font-bold"
             onClick={() => downloadIcs(b, VENUE, ADDRESS)}
           >
             <IconCalendarPlus className="size-4" />
@@ -154,9 +170,9 @@ export default function MisReservasView() {
           </Button>
         )}
         {!upcomingBooking && (
-          <Button variant="secondary" size="sm" className="shrink-0" onClick={() => bookAgain(b)}>
+          <Button variant="secondary" size="sm" className="shrink-0 font-bold" onClick={() => bookAgain(b)}>
             <IconRepeat className="size-4" />
-            Reservar de nuevo
+            Reservar otra vez
           </Button>
         )}
         {upcomingBooking && (
@@ -173,120 +189,235 @@ export default function MisReservasView() {
     )
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <Segmented
-        block
-        className="sm:w-auto sm:self-start"
-        value={tab}
-        onChange={setTab}
-        aria-label="Filtrar reservas"
-        options={[
-          { value: 'proximas', label: `Próximas${upcoming.length ? ` · ${upcoming.length}` : ''}` },
-          { value: 'pasadas', label: 'Pasadas' },
-          { value: 'canceladas', label: 'Canceladas' },
-        ]}
-      />
-
-      {!data && !error && (
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-[300px] rounded-[24px]" />
-          <Skeleton className="h-[120px] rounded-[20px]" />
+  function row(b: BookingResponse, kind: 'futura' | 'pasada' | 'cancelada', i: number) {
+    const start = hourOf(b.startAt)
+    const end = hourOf(b.endAt)
+    const total = totalOf(b, courts)
+    return (
+      <article
+        key={b.id}
+        className="grid grid-cols-[60px_minmax(0,1fr)] items-center gap-3.5 rounded-[18px] border border-line bg-surface p-3 sm:grid-cols-[72px_minmax(0,1fr)]"
+      >
+        <div className="size-[60px] overflow-hidden rounded-[14px] sm:size-[72px]">
+          <CourtArt variant={i} className="h-full w-full" />
         </div>
-      )}
+        <div className="min-w-0">
+          <b className="block truncate text-[17px] font-extrabold text-fg">{b.courtName}</b>
+          <small className="num block text-[14px] text-fg-2">
+            {when(b, now)}–{formatHour(end)} · {formatDuration(end - start)}
+            {total != null && ` · ${formatCOP(total)}`}
+          </small>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <StatusBadge status={b.status} />
+            <span className="font-mono text-[12px] text-fg-3">{b.bookingCode}</span>
+          </div>
+        </div>
+        {kind !== 'cancelada' && (
+          <div className="col-span-full border-t border-line pt-3">{actions(b, kind === 'futura')}</div>
+        )}
+      </article>
+    )
+  }
 
-      {error && (
-        <EmptyState
-          tone="danger"
-          title="No pudimos cargar tus reservas"
-          description="Revisa tu conexión e intenta de nuevo."
-          action={
-            <Button variant="secondary" size="sm" onClick={reload}>
-              Reintentar
-            </Button>
-          }
-        />
-      )}
+  return (
+    <div className="flex flex-col pb-12">
+      {/* Saludo en la franja verde */}
+      <section data-zona="verde" className="bg-bg px-4 pt-6 pb-[90px] text-fg sm:px-6 lg:px-8 lg:pt-8">
+        <div className="mx-auto w-full max-w-[1120px]">
+          <h1 className="text-display text-[clamp(36px,4.4vw,60px)] leading-none tracking-[-0.035em]">
+            Hola{firstName ? `, ${firstName}` : ''}
+          </h1>
+          <p className="mt-2 text-[18px] text-fg-2">
+            {!data
+              ? 'Tus partidos, pagos y comprobantes.'
+              : upcoming.length
+                ? `Tienes ${upcoming.length} ${upcoming.length === 1 ? 'partido' : 'partidos'} por jugar.`
+                : 'No tienes partidos por jugar. Aparta uno en segundos.'}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-fg-2">
+            <span>
+              <b className="num mr-1.5 text-[22px] font-extrabold text-fg">{data ? playedThisYear : '—'}</b>
+              {playedThisYear === 1 ? 'partido' : 'partidos'} este año
+            </span>
+            <span>
+              <b className="num mr-1.5 text-[22px] font-extrabold text-fg">{data ? distinctCourts : '—'}</b>
+              {distinctCourts === 1 ? 'cancha distinta' : 'canchas distintas'}
+            </span>
+            <span>
+              <b className="num mr-1.5 text-[22px] font-extrabold text-fg">{data ? pending : '—'}</b>
+              pendientes de pago
+            </span>
+          </div>
+        </div>
+      </section>
 
-      {data && tab === 'proximas' && next && (
-        <section>
-          <BookingTicket
-            booking={next}
-            venueName={VENUE}
-            total={totalOf(next, courts)}
-            eyebrow={
-              <span className="text-accent-text">
-                Tu próximo partido · juegas en {formatCountdown(new Date(next.startAt).getTime() - now)}
-              </span>
+      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 lg:px-8">
+        {!data && !error && <Skeleton className="-mt-16 h-[320px] rounded-[26px]" />}
+
+        {error && (
+          <EmptyState
+            className="-mt-16 bg-surface"
+            tone="danger"
+            title="No pudimos cargar tus reservas"
+            description="Revisa tu conexión e intenta de nuevo."
+            action={
+              <Button variant="secondary" size="sm" onClick={reload}>
+                Reintentar
+              </Button>
             }
-          >
-            {actions(next, true)}
-          </BookingTicket>
-        </section>
-      )}
+          />
+        )}
 
-      {data && tab === 'proximas' && !next && (
-        <EmptyState
-          title="No tienes partidos próximos"
-          description="Elige día y hora y aparta tu cancha en segundos."
-          action={
-            <Link href="/" className={buttonClasses('primary', 'md')}>
-              Reservar cancha
-            </Link>
-          }
-        />
-      )}
-
-      {data && tab !== 'proximas' && list.length === 0 && (
-        <EmptyState
-          title={tab === 'pasadas' ? 'Aún no has jugado' : 'Sin reservas canceladas'}
-          description={tab === 'pasadas' ? 'Tus partidos jugados aparecerán aquí.' : undefined}
-        />
-      )}
-
-      {data && list.length > 0 && (
-        <section className="flex flex-col gap-3">
-          {tab === 'proximas' && <h2 className="text-overline text-fg-3">Más adelante</h2>}
-          {list.map((b) => {
-            const start = hourOf(b.startAt)
-            const end = hourOf(b.endAt)
-            const total = totalOf(b, courts)
-            const isUpcoming = tab === 'proximas'
-            return (
-              <article
-                key={b.id}
-                className="rounded-[20px] border border-line bg-surface p-3 shadow-card sm:p-4"
+        {/* Próximo partido */}
+        {data && next && (
+          <article className="-mt-16 grid overflow-hidden rounded-[26px] border border-line bg-surface shadow-[0_30px_60px_-36px_rgba(11,74,64,0.5)] md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+            <div className="relative min-h-[220px] md:min-h-[300px]">
+              <div className="absolute inset-0">
+                <CourtArt className="h-full w-full" />
+              </div>
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(6,31,27,0.85))]" />
+              <span className="absolute top-4 left-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-extrabold text-botella">
+                Tu próximo partido
+              </span>
+              <div className="absolute inset-x-4 bottom-4 text-white">
+                <small className="text-[12px] font-bold tracking-[0.08em] text-[#CFE5DE] uppercase">
+                  {nextStarted ? 'En juego' : 'Faltan'}
+                </small>
+                <b className="num block text-[clamp(26px,3.4vw,34px)] font-extrabold tracking-[-0.03em]">
+                  {nextStarted ? 'Ya empezó' : countdown(new Date(next.startAt).getTime() - now)}
+                </b>
+              </div>
+            </div>
+            <div className="grid content-start gap-3.5 p-5 sm:p-7">
+              <h2 className="text-[28px] leading-[1.05] font-extrabold tracking-[-0.03em] text-fg">
+                {VENUE} · {next.courtName}
+                <small className="num mt-1 block text-[16px] font-medium tracking-normal text-fg-2">
+                  {when(next, now)}–{formatHour(hourOf(next.endAt))} ·{' '}
+                  {formatDuration(hourOf(next.endAt) - hourOf(next.startAt))}
+                </small>
+              </h2>
+              <div className="rounded-[16px] bg-surface-2 p-3.5">
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 text-[15px]">
+                  <dt className="text-fg-2">Código</dt>
+                  <dd className="font-mono font-bold text-fg">{next.bookingCode}</dd>
+                  <dt className="text-fg-2">Valor</dt>
+                  <dd className="num font-bold text-fg">{nextTotal != null ? formatCOP(nextTotal) : '—'}</dd>
+                  <dt className="text-fg-2">Pago</dt>
+                  <dd>
+                    <StatusBadge status={next.status} />
+                  </dd>
+                  <dt className="text-fg-2">Dirección</dt>
+                  <dd className="font-bold text-fg">{ADDRESS}</dd>
+                </dl>
+              </div>
+              <a
+                href={mapsUrl(`${VENUE} ${ADDRESS}`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClasses('primary', 'md', 'justify-self-start rounded-[12px] font-extrabold')}
               >
-                <div className="flex gap-4">
-                  <DateBlock iso={b.startAt.slice(0, 10)} muted={!isUpcoming} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-[15px] font-semibold text-fg">{b.courtName}</div>
-                        <div className="num mt-1 text-[14px] text-fg-2">
-                          {formatHour(start)}–{formatHour(end)} · {formatDuration(end - start)}
-                        </div>
-                      </div>
-                      {total != null && (
-                        <div className="num shrink-0 text-[15px] font-semibold text-fg">
-                          {formatCOP(total)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-2.5 flex items-center gap-2">
-                      <StatusBadge status={b.status} />
-                      <span className="num text-[12px] text-fg-3">{b.bookingCode}</span>
-                    </div>
-                  </div>
-                </div>
-                {tab !== 'canceladas' && (
-                  <div className="mt-3 border-t border-line pt-3">{actions(b, isUpcoming)}</div>
-                )}
-              </article>
-            )
-          })}
-        </section>
-      )}
+                <IconPin className="size-4" />
+                Cómo llegar
+              </a>
+              <div className="border-t border-line pt-3.5">{actions(next, true)}</div>
+            </div>
+          </article>
+        )}
+
+        {data && !next && (
+          <div className="-mt-16 rounded-[26px] border border-line bg-surface shadow-[0_30px_60px_-36px_rgba(11,74,64,0.5)]">
+            <EmptyState
+              className="border-0"
+              title="No tienes partidos próximos"
+              description="Elige día y hora y aparta tu cancha en segundos."
+              action={
+                <Link href="/" className={buttonClasses('primary', 'md', 'rounded-full font-extrabold')}>
+                  Reservar cancha
+                </Link>
+              }
+            />
+          </div>
+        )}
+
+        {/* Dividir el pago */}
+        {data && next && each != null && (
+          <div className="mt-3.5 grid grid-cols-1 items-center gap-3.5 rounded-[20px] bg-success-soft p-[18px] sm:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <b className="text-[18px] font-extrabold text-fg">Divide el pago con tu equipo</b>
+              <p className="mt-1 text-[#35554C]">
+                Calcula cuánto pone cada uno y manda el cobro al grupo de WhatsApp.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                aria-label="Menos jugadores"
+                onClick={() => setPlayers((n) => Math.max(2, n - 1))}
+                className="grid size-9 place-items-center rounded-full bg-white text-[20px] leading-none font-extrabold text-botella shadow-[inset_0_0_0_1.5px_#BFE3D3] cursor-pointer"
+              >
+                −
+              </button>
+              <output className="num min-w-[30px] text-center text-[22px] font-extrabold text-fg">
+                {players}
+              </output>
+              <button
+                type="button"
+                aria-label="Más jugadores"
+                onClick={() => setPlayers((n) => Math.min(22, n + 1))}
+                className="grid size-9 place-items-center rounded-full bg-white text-[20px] leading-none font-extrabold text-botella shadow-[inset_0_0_0_1.5px_#BFE3D3] cursor-pointer"
+              >
+                +
+              </button>
+              <span className="text-[#35554C]">jugadores ·</span>
+              <span className="num text-[26px] font-extrabold tracking-[-0.02em] text-botella">
+                {formatCOP(each)} c/u
+              </span>
+            </div>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                `Partido en ${VENUE} (${next.courtName}) ${when(next, now).toLowerCase()}. Somos ${players}: cada uno pone ${formatCOP(each)}. Código de la reserva: ${next.bookingCode}.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClasses('primary', 'md', 'justify-self-start rounded-[12px] font-extrabold')}
+            >
+              <IconWhatsApp className="size-4" />
+              Mandar el cobro al grupo
+            </a>
+          </div>
+        )}
+
+        {data && (
+          <section className="mt-10">
+            <h3 className="mb-3.5 text-[24px] font-extrabold tracking-[-0.02em] text-fg">Por jugar</h3>
+            {rest.length ? (
+              <div className="grid gap-2.5">{rest.map((b, i) => row(b, 'futura', i + 1))}</div>
+            ) : (
+              <p className="text-fg-2">
+                {next ? 'Nada más por ahora, aparte del próximo partido.' : 'Nada por ahora.'}
+              </p>
+            )}
+          </section>
+        )}
+
+        {data && (
+          <section className="mt-10">
+            <h3 className="mb-3.5 text-[24px] font-extrabold tracking-[-0.02em] text-fg">Ya jugadas</h3>
+            {past.length ? (
+              <div className="grid gap-2.5">{past.map((b, i) => row(b, 'pasada', i))}</div>
+            ) : (
+              <p className="text-fg-2">Tus partidos jugados aparecerán aquí.</p>
+            )}
+          </section>
+        )}
+
+        {data && cancelled.length > 0 && (
+          <section className="mt-10">
+            <h3 className="mb-3.5 text-[24px] font-extrabold tracking-[-0.02em] text-fg">Canceladas</h3>
+            <div className="grid gap-2.5 opacity-80">{cancelled.map((b, i) => row(b, 'cancelada', i))}</div>
+          </section>
+        )}
+      </div>
 
       {/* Confirmar cancelación */}
       <Sheet
@@ -309,15 +440,12 @@ export default function MisReservasView() {
       >
         {toCancel && (
           <div className="px-5 pt-3 pb-5 sm:px-6">
-            <div className="flex gap-4 rounded-[16px] border border-line bg-bg-2 p-3">
-              <DateBlock iso={toCancel.startAt.slice(0, 10)} />
-              <div className="min-w-0 self-center">
-                <div className="truncate text-[15px] font-semibold text-fg">{toCancel.courtName}</div>
-                <div className="num mt-1 text-[14px] text-fg-2">
-                  {formatHour(hourOf(toCancel.startAt))}–{formatHour(hourOf(toCancel.endAt))}
-                </div>
-                <div className="num mt-1 text-[12px] text-fg-3">{toCancel.bookingCode}</div>
+            <div className="rounded-[16px] bg-accent-soft p-3.5">
+              <div className="truncate text-[15px] font-extrabold text-fg">{toCancel.courtName}</div>
+              <div className="num mt-1 text-[14px] text-fg-2">
+                {when(toCancel, now)}–{formatHour(hourOf(toCancel.endAt))}
               </div>
+              <div className="mt-1 font-mono text-[12px] text-fg-3">{toCancel.bookingCode}</div>
             </div>
           </div>
         )}

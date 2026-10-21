@@ -58,7 +58,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <div className="fixed inset-0 flex">
             <DialogPanel
               transition
-              className="relative flex w-full max-w-[280px] flex-1 transform border-r border-line bg-bg-2 transition duration-300 ease-out data-closed:-translate-x-full"
+              data-zona="verde"
+              className="relative flex w-full max-w-[280px] flex-1 transform bg-bg text-fg transition duration-300 ease-out data-closed:-translate-x-full"
             >
               <button
                 type="button"
@@ -74,7 +75,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </Dialog>
 
         {/* Barra lateral en escritorio */}
-        <aside className="hidden border-r border-line bg-bg-2 lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+        <aside
+          data-zona="verde"
+          className="hidden bg-bg text-fg lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col"
+        >
           <Sidebar />
         </aside>
 

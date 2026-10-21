@@ -165,7 +165,11 @@ export default function CourtWeekCalendar({
           </div>
         </>
       ),
-      cellBg: isPast ? () => 'rgba(255,255,255,0.02)' : isToday ? () => 'rgba(198,255,61,0.03)' : undefined,
+      cellBg: isPast
+        ? () => 'rgba(255,255,255,0.02)'
+        : isToday
+          ? () => 'color-mix(in oklab, var(--accent-text) 3%, transparent)'
+          : undefined,
     }
   })
 
@@ -189,8 +193,10 @@ export default function CourtWeekCalendar({
               style={{
                 top: `${bTop}%`,
                 height: `${bH}%`,
-                background: blocked ? 'rgba(255,255,255,0.03)' : 'rgba(198,255,61,0.15)',
-                border: `1px solid ${blocked ? 'rgba(255,255,255,0.06)' : 'rgba(198,255,61,0.40)'}`,
+                background: blocked
+                  ? 'rgba(255,255,255,0.03)'
+                  : 'color-mix(in oklab, var(--accent-text) 15%, transparent)',
+                border: `1px solid ${blocked ? 'rgba(255,255,255,0.06)' : 'color-mix(in oklab, var(--accent-text) 40%, transparent)'}`,
                 cursor: !blocked && onSlotClick ? 'pointer' : 'default',
                 pointerEvents: !blocked && onSlotClick ? 'auto' : 'none',
               }}
@@ -329,7 +335,10 @@ export default function CourtWeekCalendar({
           <span className="flex items-center gap-1.5">
             <span
               className="size-2.5 rounded-sm"
-              style={{ background: 'rgba(198,255,61,0.35)', border: '1px solid rgba(198,255,61,0.6)' }}
+              style={{
+                background: 'color-mix(in oklab, var(--accent-text) 35%, transparent)',
+                border: '1px solid color-mix(in oklab, var(--accent-text) 60%, transparent)',
+              }}
             />
             Disponible
           </span>

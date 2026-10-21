@@ -197,8 +197,8 @@ export default function ScheduleGrid({
             style={{
               top: `${bTop}%`,
               height: `${bH}%`,
-              background: 'rgba(198,255,61,0.15)',
-              border: '1px solid rgba(198,255,61,0.40)',
+              background: 'color-mix(in oklab, var(--accent-text) 15%, transparent)',
+              border: '1px solid color-mix(in oklab, var(--accent-text) 40%, transparent)',
               pointerEvents: 'none',
             }}
           >

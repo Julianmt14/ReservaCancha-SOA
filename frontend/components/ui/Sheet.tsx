@@ -95,7 +95,7 @@ export default function Sheet({
             aria-labelledby={title ? titleId : undefined}
             className={clsx(
               'relative flex w-full flex-col overflow-hidden bg-surface border border-line-2 shadow-pop',
-              'max-h-[92dvh] rounded-t-[28px] sm:rounded-[24px] sm:max-h-[88vh]',
+              'max-h-[92dvh] rounded-t-[26px] sm:rounded-[26px] sm:max-h-[88vh]',
               width,
               className
             )}
@@ -112,7 +112,7 @@ export default function Sheet({
               <div className="flex items-start justify-between gap-4 px-5 pt-3 pb-1 sm:px-6 sm:pt-5">
                 <div className="min-w-0">
                   {title && (
-                    <h2 id={titleId} className="text-[19px] font-semibold tracking-[-0.02em] text-fg">
+                    <h2 id={titleId} className="text-[22px] font-extrabold tracking-[-0.02em] text-fg">
                       {title}
                     </h2>
                   )}
@@ -123,7 +123,7 @@ export default function Sheet({
                     type="button"
                     onClick={onClose}
                     aria-label="Cerrar"
-                    className="-mr-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-2 transition-colors hover:bg-surface-2 hover:text-fg cursor-pointer"
+                    className="-mr-1 grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-text transition-colors hover:bg-line cursor-pointer"
                   >
                     <svg
                       width="18"

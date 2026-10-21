@@ -140,7 +140,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       )}
                     >
                       {current && (
-                        <span className="absolute top-2.5 bottom-2.5 left-0 w-[3px] rounded-r-full bg-accent" />
+                        <span className="absolute top-2.5 bottom-2.5 left-0 w-[3px] rounded-r-full bg-menta" />
                       )}
                       <span className={current ? 'text-accent-text' : 'text-fg-3'}>{item.icon}</span>
                       <span className="flex-1">{item.name}</span>

@@ -21,7 +21,12 @@ const POLL_MAX_ATTEMPTS = 20
 type Step = 'loading-intent' | 'ready' | 'opening-widget' | 'polling' | 'done' | 'error'
 
 const STATUS_CONFIG = {
-  APPROVED: { color: 'var(--green)', bg: 'rgba(198,255,61,0.14)', label: 'Pago aprobado', icon: '✓' },
+  APPROVED: {
+    color: 'var(--green)',
+    bg: 'color-mix(in oklab, var(--accent-text) 14%, transparent)',
+    label: 'Pago aprobado',
+    icon: '✓',
+  },
   DECLINED: { color: 'var(--red)', bg: 'rgba(229,72,77,0.14)', label: 'Pago rechazado', icon: '✕' },
   VOIDED: { color: 'var(--red)', bg: 'rgba(229,72,77,0.14)', label: 'Pago anulado', icon: '✕' },
   ERROR: { color: 'var(--red)', bg: 'rgba(229,72,77,0.14)', label: 'Error en pago', icon: '!' },
@@ -253,7 +258,10 @@ export default function WompiCheckoutModal({ open, bookingId, bookingCode, onClo
                 </div>
                 <div
                   className="size-12 rounded-xl grid place-items-center text-[20px]"
-                  style={{ background: 'rgba(198,255,61,0.15)', color: 'var(--green)' }}
+                  style={{
+                    background: 'color-mix(in oklab, var(--accent-text) 15%, transparent)',
+                    color: 'var(--green)',
+                  }}
                 >
                   $
                 </div>

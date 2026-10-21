@@ -29,11 +29,11 @@ app:
   jwt:
     secret: ${JWT_SECRET:cGFyYS1kZXYtbXV5LXNlY3JldG8tbXV5LWxhcmdvLXJlc2VydmFjYW5jaGEtY29sb21iaWE=}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  # Los pagos son de servicio-pagos (servicios/servicio-pagos, puerto 8085); aquí solo se le llama.
+  servicio-pagos:
+    url: ${SERVICIO_PAGOS_URL:http://localhost:8085}
+    api-key: ${PAGOS_API_KEY:clave-dev-portal-reservacancha}
+    timeout-ms: ${SERVICIO_PAGOS_TIMEOUT_MS:15000}
   wompi:
-    environment: sandbox
-    public-key: ${WOMPI_PUBLIC_KEY:pub_test_XXXX}
-    private-key: ${WOMPI_PRIVATE_KEY:prv_test_XXXX}
-    integrity-secret: ${WOMPI_INTEGRITY_SECRET:test_integrity_XXXX}
+    # El webhook de Wompi llega aquí: se valida este secreto y se reenvía a servicio-pagos.
     events-secret: ${WOMPI_EVENTS_SECRET:test_events_XXXX}
-    base-url: ${WOMPI_BASE_URL:https://sandbox.wompi.co/v1}
-    currency: COP

@@ -12,12 +12,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/wompi")
 public class WompiWebhookController {
 
-  private final WompiService wompi;
+  private final PagoService pagos;
   private final String eventsSecret;
 
   public WompiWebhookController(
-      WompiService wompi, @Value("${app.wompi.events-secret}") String eventsSecret) {
-    this.wompi = wompi;
+      PagoService pagos, @Value("${app.wompi.events-secret}") String eventsSecret) {
+    this.pagos = pagos;
     this.eventsSecret = eventsSecret;
   }
 
@@ -36,15 +36,15 @@ public class WompiWebhookController {
     String ref = String.valueOf(body.getOrDefault("referencia", ""));
     String tx = String.valueOf(body.getOrDefault("transactionId", ""));
     String status = String.valueOf(body.getOrDefault("status", "PENDING"));
-    Pago p = wompi.webhook(ref, tx, status);
+    PagoConReserva p = pagos.notificar(ref, tx, status);
     return Map.of(
         "pagoId",
-        p.getId(),
+        p.id(),
         "estado",
-        p.getEstado().name(),
+        p.estado(),
         "reserva",
-        p.getReserva().getId(),
+        p.reserva().getId(),
         "reservaEstado",
-        p.getReserva().getEstado().name());
+        p.reserva().getEstado().name());
   }
 }

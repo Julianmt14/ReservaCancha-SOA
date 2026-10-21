@@ -1,21 +1,32 @@
 package co.edu.usta.reservacancha;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import co.edu.usta.reservacancha.pago.IntencionPagoDto;
+import co.edu.usta.reservacancha.pago.PagoDto;
+import co.edu.usta.reservacancha.pago.PagosClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -29,6 +40,12 @@ class ReservaIntegrationTest {
 
   @Autowired MockMvc mvc;
   @Autowired ObjectMapper json;
+
+  /** servicio-pagos es otra aplicación: en estas pruebas se simula su cliente HTTP. */
+  @MockBean PagosClient pagos;
+
+  @Value("${app.wompi.events-secret}")
+  String eventsSecret;
 
   private static LocalDate fechaNueva() {
     return LocalDate.now().plusDays(DIA.incrementAndGet());
@@ -159,6 +176,13 @@ class ReservaIntegrationTest {
 
     mvc.perform(post("/api/pagos/iniciar/" + id).header("Authorization", "Bearer " + otro))
         .andExpect(status().isForbidden());
+    // El permiso se revisa en ReservaCancha: la solicitud ajena nunca llega a servicio-pagos
+    verify(pagos, never()).registrar(any());
+
+    when(pagos.registrar(any()))
+        .thenReturn(
+            new IntencionPagoDto(
+                1L, id, "RC-" + id + "-1", 9_000_000L, "COP", "a".repeat(64), "pub", "PENDIENTE"));
     String res =
         mvc.perform(post("/api/pagos/iniciar/" + id).header("Authorization", "Bearer " + dueno))
             .andExpect(status().isOk())
@@ -166,6 +190,47 @@ class ReservaIntegrationTest {
             .getResponse()
             .getContentAsString();
     assertThat(json.readTree(res).get("firmaIntegridad").asText()).hasSize(64);
+  }
+
+  @Test
+  void elWebhookAprobadoQueConfirmaElServicioMarcaLaReservaPagada() throws Exception {
+    String dueno = TestSupport.registrarJugador(mvc, json);
+    long id =
+        json.readTree(
+                reservar(dueno, 1, fechaNueva(), "07:00:00", "08:00:00")
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString())
+            .get("id")
+            .asLong();
+    Instant ahora = Instant.now();
+    when(pagos.notificar(any()))
+        .thenReturn(
+            new PagoDto(
+                5L,
+                id,
+                BigDecimal.valueOf(90000),
+                "COP",
+                "RC-" + id + "-1",
+                "tx-1",
+                "APROBADO",
+                ahora,
+                ahora));
+
+    String res =
+        mvc.perform(
+                post("/api/wompi/webhook")
+                    .header("X-Webhook-Secret", eventsSecret)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"referencia\":\"RC-"
+                            + id
+                            + "-1\",\"transactionId\":\"tx-1\",\"status\":\"APPROVED\"}"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(json.readTree(res).get("reservaEstado").asText()).isEqualTo("PAGADA");
   }
 
   @Test

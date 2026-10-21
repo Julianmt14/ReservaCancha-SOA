@@ -10,29 +10,29 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/pagos")
 public class PagoController {
 
-  private final WompiService wompi;
+  private final PagoService pagos;
 
-  public PagoController(WompiService wompi) {
-    this.wompi = wompi;
+  public PagoController(PagoService pagos) {
+    this.pagos = pagos;
   }
 
   @PostMapping("/iniciar/{reservaId}")
   public Map<String, Object> iniciar(
       @PathVariable Long reservaId, @AuthenticationPrincipal Usuario usuario) {
-    return wompi.iniciarPago(reservaId, usuario);
+    return pagos.iniciarPago(reservaId, usuario);
   }
 
   @GetMapping("/reserva/{reservaId}")
-  public List<Pago> porReserva(
+  public List<PagoConReserva> porReserva(
       @PathVariable Long reservaId, @AuthenticationPrincipal Usuario usuario) {
-    return wompi.porReserva(reservaId, usuario);
+    return pagos.porReserva(reservaId, usuario);
   }
 
   @PostMapping("/confirmar/{reservaId}")
-  public Pago confirmar(
+  public PagoConReserva confirmar(
       @PathVariable Long reservaId,
       @RequestParam String transactionId,
       @AuthenticationPrincipal Usuario usuario) {
-    return wompi.confirmar(reservaId, transactionId, usuario);
+    return pagos.confirmar(reservaId, transactionId, usuario);
   }
 }

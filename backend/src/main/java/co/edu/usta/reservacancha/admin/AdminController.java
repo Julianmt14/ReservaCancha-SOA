@@ -1,10 +1,12 @@
 package co.edu.usta.reservacancha.admin;
 
-import co.edu.usta.reservacancha.pago.PagoRepository;
+import co.edu.usta.reservacancha.pago.PagoService;
 import co.edu.usta.reservacancha.reserva.ReservaRepository;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -12,18 +14,28 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
   private final ReservaRepository reservas;
-  private final PagoRepository pagos;
+  private final PagoService pagos;
 
-  public AdminController(ReservaRepository reservas, PagoRepository pagos) {
+  public AdminController(ReservaRepository reservas, PagoService pagos) {
     this.reservas = reservas;
     this.pagos = pagos;
   }
 
+  /**
+   * Si servicio-pagos está apagado el resumen igual responde con las reservas: totalPagos queda en
+   * null y se explica en "aviso".
+   */
   @GetMapping("/resumen")
   public Map<String, Object> resumen() {
-    return Map.of(
-        "totalReservas", reservas.count(),
-        "totalPagos", pagos.count());
+    Map<String, Object> r = new LinkedHashMap<>();
+    r.put("totalReservas", reservas.count());
+    try {
+      r.put("totalPagos", pagos.todos().size());
+    } catch (ResponseStatusException e) {
+      r.put("totalPagos", null);
+      r.put("aviso", e.getReason());
+    }
+    return r;
   }
 
   @GetMapping("/reservas")
@@ -33,6 +45,6 @@ public class AdminController {
 
   @GetMapping("/pagos")
   public Object pagos() {
-    return pagos.findAll();
+    return pagos.todos();
   }
 }

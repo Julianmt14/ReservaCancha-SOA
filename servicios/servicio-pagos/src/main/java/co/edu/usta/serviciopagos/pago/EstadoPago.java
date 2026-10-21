@@ -1,4 +1,4 @@
-package co.edu.usta.reservacancha.pago;
+package co.edu.usta.serviciopagos.pago;
 
 public enum EstadoPago {
   PENDIENTE,

@@ -1,10 +1,13 @@
-package co.edu.usta.reservacancha.pago;
+package co.edu.usta.serviciopagos.pago;
 
-import co.edu.usta.reservacancha.reserva.Reserva;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * Pago de una reserva. El servicio guarda solo el id de la reserva: la reserva pertenece a
+ * ReservaCancha y este servicio no lee su base de datos.
+ */
 @Entity
 @Table(name = "pagos")
 public class Pago {
@@ -13,14 +16,17 @@ public class Pago {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(optional = false)
-  private Reserva reserva;
+  @Column(nullable = false)
+  private Long reservaId;
 
   @Column(nullable = false)
   private BigDecimal valor;
 
   private String moneda = "COP";
-  private String referencia; // referencia interna (reserva-N-timestamp)
+
+  @Column(unique = true)
+  private String referencia; // RC-<reserva>-<timestamp>, la misma que viaja a Wompi
+
   private String wompiTransactionId;
 
   @Enumerated(EnumType.STRING)
@@ -35,12 +41,12 @@ public class Pago {
     return id;
   }
 
-  public Reserva getReserva() {
-    return reserva;
+  public Long getReservaId() {
+    return reservaId;
   }
 
-  public void setReserva(Reserva reserva) {
-    this.reserva = reserva;
+  public void setReservaId(Long reservaId) {
+    this.reservaId = reservaId;
   }
 
   public BigDecimal getValor() {

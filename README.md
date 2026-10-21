@@ -13,7 +13,8 @@ La pantalla de torneos del frontend es solo la interfaz, sin API ni datos.
 
 ```
 ReservaCancha-USTA/
-  backend/   Spring Boot 3.3 + Java 21 + JPA + Security/JWT + Postgres/H2 + Wompi sandbox  (puerto 8080)
+  backend/   Spring Boot 3.3 + Java 21 + JPA + Security/JWT + Postgres/H2  (puerto 8080)
+  servicios/servicio-pagos/  Servicio de pagos aparte, con Wompi sandbox (puerto 8085) — ver servicios/README.md
   frontend/  Next.js 16 + React 19 + Tailwind 4 (puerto 3000) — ver frontend/README.md
   tests/     Pruebas de seguridad SEC-01 (Postman/Newman)
   docker-compose.yml  Postgres 16 para dev
@@ -25,13 +26,17 @@ ReservaCancha-USTA/
 # 1) Base de datos (opcional; sin esto usa H2 en memoria)
 docker compose up -d db
 
-# 2) Backend
-cd backend
+# 2) Servicio de pagos (sin él la app funciona, pero no se puede pagar)
+cd servicios/servicio-pagos
+mvn spring-boot:run
+
+# 3) Backend
+cd ../../backend
 mvn spring-boot:run
 # o con Postgres:
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/reservacancha SPRING_DATASOURCE_USERNAME=rc SPRING_DATASOURCE_PASSWORD=rc123 SPRING_DATASOURCE_DRIVER=org.postgresql.Driver mvn spring-boot:run
 
-# 3) Frontend
+# 4) Frontend
 cd ../frontend
 cp .env.example .env.local
 npm install
@@ -46,8 +51,12 @@ Admin semilla (solo desarrollo): `admin@reservacancha.co` / `admin123`.
 |---|---|---|
 | `JWT_SECRET` | secreto de desarrollo | **obligatorio cambiarlo en cualquier despliegue** (Base64, 256 bits o más) |
 | `CORS_ORIGINS` | `http://localhost:3000` | orígenes del frontend, separados por coma |
-| `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_INTEGRITY_SECRET` | placeholders sandbox | llaves del comercio en Wompi |
+| `SERVICIO_PAGOS_URL` | `http://localhost:8085` | dirección de servicio-pagos |
+| `PAGOS_API_KEY` | clave de desarrollo | clave que el backend manda a servicio-pagos en `X-Api-Key`; la misma en los dos lados |
 | `WOMPI_EVENTS_SECRET` | `test_events_XXXX` | secreto compartido que debe enviar el webhook en `X-Webhook-Secret` |
+
+Las llaves del comercio (`WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_BASE_URL`) ahora son de
+servicio-pagos; ver [`servicios/README.md`](servicios/README.md).
 
 ## API (backend)
 
@@ -69,6 +78,10 @@ Admin semilla (solo desarrollo): `admin@reservacancha.co` / `admin123`.
 | GET | `/api/pagos/reserva/{reservaId}` | dueño, ADMIN, PROPIETARIO | pagos de la reserva |
 | POST | `/api/wompi/webhook` | secreto compartido | evento de Wompi |
 | GET | `/api/admin/resumen`, `/reservas`, `/pagos` | ADMIN, PROPIETARIO | consultas administrativas |
+
+Las rutas de pagos no cambiaron para el frontend, pero el backend ya no guarda los pagos: revisa la
+reserva y los permisos y le pide la operación a servicio-pagos por HTTP. Si ese servicio está apagado,
+responden 503 y el resumen trae `totalPagos: null` con un aviso.
 
 ## Wompi sandbox (10 flujos antes de semana 15)
 

@@ -5,7 +5,8 @@ Instrumento: Postman/Newman con tokens y roles válidos e inválidos.
 
 ## Ejecutar
 
-Con el backend en `http://localhost:8080`:
+Con el backend en `http://localhost:8080` y servicio-pagos en `http://localhost:8085` (el control
+positivo de pagos del grupo 8 lo necesita; los casos negativos se cortan antes, en el backend):
 
 ```bash
 npx newman run tests/security/SEC-01.postman_collection.json

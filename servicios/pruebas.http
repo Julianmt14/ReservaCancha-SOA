@@ -1,0 +1,42 @@
+### Pruebas directas a servicio-pagos (cliente HTTP de IntelliJ)
+### Antes: cd servicios/servicio-pagos && mvn spring-boot:run
+@pagos = http://localhost:8085
+@clave = clave-dev-portal-reservacancha
+
+### ¿Está encendido? (no pide clave)
+GET {{pagos}}/api/pagos/ping
+
+### Sin clave: 401
+GET {{pagos}}/api/pagos
+
+### registrarPago: 201 con la referencia y la firma para Wompi
+POST {{pagos}}/api/pagos
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"reservaId": 12, "valor": 90000}
+
+### Valor en cero: 400
+POST {{pagos}}/api/pagos
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"reservaId": 12, "valor": 0}
+
+### Pagos de la reserva 12
+GET {{pagos}}/api/pagos?reservaId=12
+X-Api-Key: {{clave}}
+
+### Aviso de Wompi (copiar la referencia que devolvió registrarPago): el pago queda APROBADO
+POST {{pagos}}/api/pagos/notificaciones
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"referencia": "RC-12-PEGAR-AQUI", "transactionId": "tx-prueba", "status": "APPROVED"}
+
+### Segundo pago de la misma reserva ya aprobada: 409
+POST {{pagos}}/api/pagos
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"reservaId": 12, "valor": 90000}

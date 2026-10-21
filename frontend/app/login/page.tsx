@@ -44,7 +44,7 @@ export default function LoginPage() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"
-                fill="white"
+                fill="var(--accent-ink)"
               />
             </svg>
           </div>
@@ -123,7 +123,7 @@ export default function LoginPage() {
             className="w-full rounded-lg py-2.5 text-sm font-semibold transition-colors disabled:opacity-60"
             style={{
               background: loading ? 'var(--green-deep)' : 'var(--green)',
-              color: 'white',
+              color: 'var(--accent-ink)',
               fontFamily: 'var(--font-sans)',
               cursor: loading ? 'not-allowed' : 'pointer',
             }}

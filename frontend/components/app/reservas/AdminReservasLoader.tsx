@@ -41,7 +41,7 @@ function addDays(d: Date, n: number) {
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   PENDING: { label: 'Pendiente', color: 'var(--amber)', bg: 'rgba(242,181,68,0.14)' },
   CONFIRMED: { label: 'Confirmada', color: 'var(--blue)', bg: 'rgba(76,141,245,0.14)' },
-  COMPLETED: { label: 'Completada', color: 'var(--green)', bg: 'rgba(27,158,75,0.14)' },
+  COMPLETED: { label: 'Completada', color: 'var(--green)', bg: 'rgba(198,255,61,0.14)' },
   CANCELLED: { label: 'Cancelada', color: 'var(--red)', bg: 'rgba(229,72,77,0.14)' },
 }
 
@@ -334,7 +334,7 @@ function ListadoTab({
                   className="size-7 rounded-md text-xs font-medium cursor-pointer"
                   style={{
                     background: p === page ? 'var(--green)' : 'transparent',
-                    color: p === page ? '#fff' : 'var(--text-3)',
+                    color: p === page ? 'var(--accent-ink)' : 'var(--text-3)',
                   }}
                 >
                   {p}
@@ -472,7 +472,7 @@ function AgendaTab({
           <span className="flex items-center gap-1.5">
             <span
               className="size-2.5 rounded-sm"
-              style={{ background: 'rgba(27,158,75,0.3)', border: '1px solid rgba(27,158,75,0.6)' }}
+              style={{ background: 'rgba(198,255,61,0.3)', border: '1px solid rgba(198,255,61,0.6)' }}
             />
             Completada
           </span>
@@ -667,7 +667,7 @@ export default function AdminReservasLoader() {
         <button
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold cursor-pointer"
-          style={{ background: 'var(--green)', color: '#fff' }}
+          style={{ background: 'var(--green)', color: 'var(--accent-ink)' }}
           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--green-deep)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--green)')}
         >

@@ -1,101 +1,116 @@
 'use client'
 
-import type { CourtResponse, SportType } from '@/lib/api/courts'
+import clsx from 'clsx'
+import { TimeChip } from '@/components/ui/Chip'
+import { IconArrowRight, IconPin } from '@/components/app/icons'
+import CourtArt from '@/components/app/booking/CourtArt'
+import { courtTypeLabel } from '@/components/app/booking/courtType'
+import { dayPart, freeCount, timeOptions, type DayPart } from '@/components/app/booking/availability'
+import type { Venue } from '@/components/app/booking/useVenues'
+import { formatCOP, formatHour, relativeDayLabel } from '@/lib/format'
 
-const SPORT_LABEL: Record<SportType, string> = {
-  FUTBOL: 'Fútbol',
-  PADEL: 'Pádel',
-  VOLEIBOL: 'Voleibol',
-}
-
-export interface Venue {
-  businessId: number
-  businessName: string
-  courts: CourtResponse[]
-}
+export type { Venue }
 
 interface Props {
   venue: Venue
-  onClick: () => void
+  date: string
+  part: DayPart | 'all'
+  onOpen: () => void
+  onPickTime: (start: number) => void
+  className?: string
 }
 
-export default function VenueCard({ venue, onClick }: Props) {
-  const activeCourts = venue.courts.filter((c) => c.active)
-  const sports = [...new Set(venue.courts.map((c) => c.sportType))]
+/** Tarjeta media-first del complejo con las próximas horas libres del día elegido. */
+export default function VenueCard({ venue, date, part, onOpen, onPickTime, className }: Props) {
+  const active = venue.courts.filter((c) => c.court.active)
+  const options = timeOptions(active, date, 1).filter(
+    (o) => o.free.length > 0 && (part === 'all' || dayPart(o.start) === part)
+  )
+  const free = freeCount(active, date)
+  const minPrice = active.length ? Math.min(...active.map((c) => c.court.pricePerHour)) : null
+  const types = [...new Set(active.map((c) => courtTypeLabel(c.court)))]
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left rounded-2xl overflow-hidden transition-transform hover:-translate-y-0.5 cursor-pointer"
-      style={{ background: 'var(--panel)', border: '1px solid var(--line)' }}
+    <article
+      className={clsx('overflow-hidden rounded-[24px] border border-line bg-surface shadow-card', className)}
     >
-      <div
-        className="h-[6px]"
-        style={{ background: 'linear-gradient(90deg, var(--green), var(--green-deep))' }}
-      />
-
-      <div className="p-5 flex flex-col gap-3">
-        <div>
-          <h3 className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-            {venue.businessName}
-          </h3>
-          <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>
-            Complejo deportivo
+      <button type="button" onClick={onOpen} className="group relative block w-full text-left cursor-pointer">
+        <CourtArt className="h-52 w-full transition-transform duration-500 group-hover:scale-[1.02] sm:h-64" />
+        <div className="absolute top-4 left-4 flex gap-2">
+          {/* Sobre la foto siempre oscura: colores fijos, no del tema */}
+          <span
+            className={clsx(
+              'inline-flex h-6 items-center rounded-full border bg-black/55 px-2.5 text-[10.5px] font-bold tracking-[0.1em] uppercase backdrop-blur',
+              free === 0
+                ? 'border-[#F04D4D]/50 text-[#FF8A8A]'
+                : free <= 3
+                  ? 'border-[#F5B942]/50 text-[#F5B942]'
+                  : 'border-[#C6FF3D]/45 text-[#C6FF3D]'
+            )}
+          >
+            {free === 0 ? 'Sin cupos' : free <= 3 ? 'Últimos cupos' : 'Disponible'}
+          </span>
+        </div>
+        <div className="absolute inset-x-4 bottom-4 sm:inset-x-6 sm:bottom-5">
+          <h2 className="text-display text-[34px] text-white sm:text-[44px]">{venue.businessName}</h2>
+          <p className="mt-2 flex items-center gap-1.5 text-[13.5px] text-white/75">
+            <IconPin className="size-[15px]" />
+            {venue.address}
           </p>
         </div>
+      </button>
 
-        <div className="flex flex-wrap gap-1.5">
-          {sports.map((s) => (
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {types.map((t) => (
             <span
-              key={s}
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: 'var(--green-soft)', color: 'var(--green)' }}
+              key={t}
+              className="rounded-full border border-line-2 px-3 py-1 text-[12.5px] font-medium text-fg-2"
             >
-              {SPORT_LABEL[s]}
+              {t}
             </span>
           ))}
+          <span className="ml-auto text-[13px] text-fg-2">
+            desde{' '}
+            <b className="num text-[15px] font-semibold text-fg">
+              {minPrice != null ? formatCOP(minPrice) : '—'}
+            </b>
+            /h
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 pt-2 mt-1" style={{ borderTop: '1px solid var(--line)' }}>
-          <div>
-            <div className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-              Canchas
-            </div>
-            <div className="text-[14px] font-bold font-mono" style={{ color: 'var(--text)' }}>
-              {venue.courts.length}
-            </div>
+        <div>
+          <div className="text-overline mb-2.5 flex items-center justify-between text-fg-2">
+            <span>Horas libres · {relativeDayLabel(date)}</span>
+            <span className="num normal-case tracking-normal text-fg-3">{free} disponibles</span>
           </div>
-          <div>
-            <div className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-              Disponibles
+          {options.length ? (
+            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+              {options.slice(0, 6).map((o) => (
+                <TimeChip
+                  key={o.start}
+                  compact
+                  state="free"
+                  time={formatHour(o.start)}
+                  onClick={() => onPickTime(o.start)}
+                  className="shrink-0"
+                />
+              ))}
             </div>
-            <div
-              className="text-[14px] font-bold font-mono"
-              style={{ color: activeCourts.length > 0 ? 'var(--green)' : 'var(--red)' }}
-            >
-              {activeCourts.length}
-            </div>
-          </div>
-          <div
-            className="ml-auto flex items-center gap-1 text-[12px] font-medium"
-            style={{ color: 'var(--text-3)' }}
-          >
-            Ver canchas
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </div>
+          ) : (
+            <p className="text-[13.5px] text-fg-3">No quedan horas libres en esta franja. Prueba otro día.</p>
+          )}
         </div>
+
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex items-center justify-between rounded-[14px] border border-line px-4 py-3 text-[14px] font-semibold text-fg transition-colors hover:border-line-2 hover:bg-surface-2 cursor-pointer"
+        >
+          Ver todos los horarios
+          <IconArrowRight className="size-[18px] text-accent-text" />
+        </button>
       </div>
-    </button>
+    </article>
   )
 }

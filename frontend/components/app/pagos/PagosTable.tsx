@@ -151,7 +151,7 @@ export default function PagosTable({ rows, page, pageSize, onPage, loading, onRo
                 className="size-7 rounded-md text-xs font-medium cursor-pointer"
                 style={{
                   background: p === page ? 'var(--green)' : 'transparent',
-                  color: p === page ? '#fff' : 'var(--text-3)',
+                  color: p === page ? 'var(--accent-ink)' : 'var(--text-3)',
                 }}
               >
                 {p}

@@ -18,8 +18,8 @@ const STATUS_COLOR: Record<ReservationStatus, { color: string; bg: string; borde
   {
     confirmed: {
       color: 'var(--green)',
-      bg: 'rgba(27,158,75,0.18)',
-      border: 'rgba(27,158,75,0.45)',
+      bg: 'rgba(198,255,61,0.18)',
+      border: 'rgba(198,255,61,0.45)',
       label: 'Confirmada',
     },
     pending: {
@@ -75,7 +75,7 @@ export default function WeekCalendar({
         <div
           className="mt-0.5 mx-auto text-[16px] font-bold normal-case tracking-normal leading-tight rounded-md"
           style={{
-            color: d.today ? '#fff' : 'var(--text)',
+            color: d.today ? 'var(--accent-ink)' : 'var(--text)',
             background: d.today ? 'var(--green)' : 'transparent',
             width: 28,
             lineHeight: '28px',
@@ -85,7 +85,7 @@ export default function WeekCalendar({
         </div>
       </>
     ),
-    cellBg: d.today ? () => 'rgba(27,158,75,0.03)' : undefined,
+    cellBg: d.today ? () => 'rgba(198,255,61,0.03)' : undefined,
   }))
 
   const overlays: CalendarOverlay[] = days.flatMap((_, dayIdx) => {

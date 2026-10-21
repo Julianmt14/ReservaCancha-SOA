@@ -9,6 +9,7 @@ import StatsGrid from '@/components/app/dashboard/StatsGrid'
 import WeekCalendar from '@/components/app/dashboard/WeekCalendar'
 import BookingDetailModal from '@/components/app/reservas/BookingDetailModal'
 import PlayerHome from '@/components/app/home/PlayerHome'
+import Segmented from '@/components/ui/Segmented'
 import {
   IconStatReservas,
   IconStatIngresos,
@@ -331,42 +332,31 @@ function AdminDashboard() {
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
 
   return (
-    <div className="flex flex-col gap-6 p-7">
+    <div className="flex flex-col gap-6 px-4 pt-6 pb-10 sm:px-6 lg:px-8 lg:pt-8">
       {/* Page header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-bold tracking-[-0.03em] text-text">
-            {greeting},{' '}
-            <em
-              className="not-italic font-normal text-brand"
-              style={{ fontFamily: 'Instrument Serif, serif', letterSpacing: '-0.01em' }}
-            >
-              {firstName}
-            </em>
+          <p className="text-[14px] text-fg-2">Resumen del complejo en tiempo real.</p>
+          <h1 className="text-display mt-2 text-[40px] text-fg sm:text-[52px]">
+            {greeting}
+            {firstName && (
+              <>
+                , <span className="text-accent-text">{firstName}</span>
+              </>
+            )}
           </h1>
-          <p className="mt-[6px] text-[13.5px] text-text-2">Resumen del complejo en tiempo real.</p>
         </div>
 
-        {/* Period selector */}
-        <div
-          className="flex overflow-hidden rounded-lg border border-line"
-          style={{ background: 'var(--bg-2)' }}
-        >
-          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className="px-[14px] py-[7px] text-[12.5px] font-semibold cursor-pointer transition-colors"
-              style={{
-                background: period === p ? 'var(--panel-2)' : 'transparent',
-                color: period === p ? 'var(--text)' : 'var(--text-3)',
-                borderRight: p !== 'año' ? '1px solid var(--line)' : undefined,
-              }}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          size="sm"
+          value={period}
+          onChange={setPeriod}
+          aria-label="Periodo"
+          options={(Object.keys(PERIOD_LABELS) as Period[]).map((p) => ({
+            value: p,
+            label: PERIOD_LABELS[p],
+          }))}
+        />
       </div>
 
       <StatsGrid stats={stats} />

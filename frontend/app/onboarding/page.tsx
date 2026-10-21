@@ -97,7 +97,7 @@ export default function OnboardingPage() {
             className="inline-flex items-center justify-center size-14 rounded-2xl mb-4"
             style={{
               background: 'linear-gradient(135deg, var(--green), var(--green-deep))',
-              boxShadow: '0 8px 24px rgba(27,158,75,0.35)',
+              boxShadow: '0 8px 24px rgba(198,255,61,0.35)',
             }}
           >
             <svg
@@ -195,7 +195,7 @@ export default function OnboardingPage() {
               type="submit"
               disabled={loading}
               className="w-full rounded-xl py-3 text-[14px] font-semibold transition-colors disabled:opacity-60 cursor-pointer"
-              style={{ background: 'var(--green)', color: '#fff' }}
+              style={{ background: 'var(--green)', color: 'var(--accent-ink)' }}
               onMouseEnter={(e) => {
                 if (!loading) e.currentTarget.style.background = 'var(--green-deep)'
               }}

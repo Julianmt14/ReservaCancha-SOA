@@ -137,10 +137,7 @@ export default function CreateReservaModal({
           </div>
 
           {error && (
-            <p
-              className="text-xs rounded-lg px-3 py-2"
-              style={{ color: 'var(--red)', background: 'var(--red-soft)' }}
-            >
+            <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger">
               {error}
             </p>
           )}

@@ -197,8 +197,8 @@ export default function ScheduleGrid({
             style={{
               top: `${bTop}%`,
               height: `${bH}%`,
-              background: 'rgba(27,158,75,0.15)',
-              border: '1px solid rgba(27,158,75,0.40)',
+              background: 'rgba(198,255,61,0.15)',
+              border: '1px solid rgba(198,255,61,0.40)',
               pointerEvents: 'none',
             }}
           >
@@ -333,7 +333,7 @@ export default function ScheduleGrid({
           type="submit"
           disabled={saving || deleting}
           className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
-          style={{ background: 'var(--green)', color: '#fff' }}
+          style={{ background: 'var(--green)', color: 'var(--accent-ink)' }}
         >
           {saving ? 'Guardando…' : existingForSelected ? 'Actualizar horario' : 'Guardar horario'}
         </button>

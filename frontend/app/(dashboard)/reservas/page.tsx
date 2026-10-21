@@ -11,14 +11,12 @@ export default function ReservasPage() {
 
   if (user?.role === 'JUGADOR') {
     return (
-      <div className="flex flex-col gap-6 p-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pt-6 pb-10 sm:px-6 lg:pt-10">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>
-            Mis reservas
+          <p className="text-[15px] text-fg-2">Tus partidos, pagos y comprobantes.</p>
+          <h1 className="text-display mt-2 text-[44px] text-fg sm:text-[64px]">
+            Mis <span className="text-accent-text">reservas</span>
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-3)' }}>
-            Historial y estado de tus reservas.
-          </p>
         </div>
         <MisReservasView />
       </div>

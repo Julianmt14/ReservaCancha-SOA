@@ -113,7 +113,7 @@ export default function CanchasView() {
             setModalOpen(true)
           }}
           className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer"
-          style={{ background: 'var(--green)', color: '#fff' }}
+          style={{ background: 'var(--green)', color: 'var(--accent-ink)' }}
           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--green-deep)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--green)')}
         >

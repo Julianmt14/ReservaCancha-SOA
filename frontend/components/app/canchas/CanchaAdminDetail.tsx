@@ -148,7 +148,7 @@ export default function CanchaAdminDetail({ court, onBack, onUpdated, onDeleted 
           style={{
             background: 'var(--green-soft)',
             color: 'var(--green)',
-            border: '1px solid rgba(27,158,75,0.25)',
+            border: '1px solid rgba(198,255,61,0.25)',
           }}
         >
           {court.name.slice(0, 2).toUpperCase()}
@@ -270,7 +270,7 @@ export default function CanchaAdminDetail({ court, onBack, onUpdated, onDeleted 
             <button
               onClick={() => setEditOpen(true)}
               className="w-fit px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer"
-              style={{ background: 'var(--green)', color: '#fff' }}
+              style={{ background: 'var(--green)', color: 'var(--accent-ink)' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--green-deep)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--green)')}
             >

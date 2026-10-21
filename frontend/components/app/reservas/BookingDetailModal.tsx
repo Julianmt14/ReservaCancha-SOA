@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth/context'
 const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
   PENDING: { color: 'var(--amber)', bg: 'rgba(242,181,68,0.14)', label: 'Pendiente' },
   CONFIRMED: { color: 'var(--blue)', bg: 'rgba(76,141,245,0.14)', label: 'Confirmada' },
-  COMPLETED: { color: 'var(--green)', bg: 'rgba(27,158,75,0.14)', label: 'Completada' },
+  COMPLETED: { color: 'var(--green)', bg: 'rgba(198,255,61,0.14)', label: 'Completada' },
   CANCELLED: { color: 'var(--red)', bg: 'rgba(229,72,77,0.14)', label: 'Cancelada' },
 }
 
@@ -289,23 +289,23 @@ export default function BookingDetailModal({
                 className="shrink-0 flex flex-col items-center justify-center gap-2"
                 style={{
                   width: 180,
-                  background: 'rgba(27,158,75,0.12)',
+                  background: 'rgba(198,255,61,0.12)',
                   borderRight: '1px solid var(--line)',
                 }}
               >
                 <div
                   className="size-16 rounded-2xl grid place-items-center text-[22px] font-bold"
                   style={{
-                    background: 'rgba(27,158,75,0.2)',
+                    background: 'rgba(198,255,61,0.2)',
                     color: 'var(--green)',
-                    border: '1px solid rgba(27,158,75,0.35)',
+                    border: '1px solid rgba(198,255,61,0.35)',
                   }}
                 >
                   {initials}
                 </div>
                 <span
                   className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(27,158,75,0.15)', color: 'var(--green)' }}
+                  style={{ background: 'rgba(198,255,61,0.15)', color: 'var(--green)' }}
                 >
                   Cancha
                 </span>

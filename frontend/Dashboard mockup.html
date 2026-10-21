@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>ReservaCancha — Dashboard Los Llaneros</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --green: #1B9E4B;
+    --green-deep: #14823C;
+    --green-soft: rgba(27, 158, 75, 0.14);
+    --green-line: rgba(27, 158, 75, 0.45);
+    --bg: #0D1B2A;
+    --bg-2: #102132;
+    --panel: #152436;
+    --panel-2: #1B2C3F;
+    --line: rgba(255,255,255,0.07);
+    --line-2: rgba(255,255,255,0.12);
+    --text: #E9EEF4;
+    --text-2: #A6B3C2;
+    --text-3: #6A7B8E;
+    --amber: #F2B544;
+    --amber-soft: rgba(242,181,68,0.14);
+    --red: #E5484D;
+    --red-soft: rgba(229,72,77,0.14);
+    --blue: #4C8DF5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
+    min-width: 1440px;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: 'tnum'; }
+
+  /* ---------- Layout ---------- */
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    background: #0A1623;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    padding: 20px 14px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--green), var(--green-deep));
+    display: grid; place-items: center;
+    box-shadow: 0 6px 18px rgba(27,158,75,0.35);
+  }
+  .logo-mark svg { width: 18px; height: 18px; }
+  .logo-name { font-weight: 800; font-size: 15.5px; letter-spacing: -0.025em; }
+  .logo-name span { color: var(--green); }
+  .venue-pill {
+    margin: 0 4px 18px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+  }
+  .venue-pill:hover { border-color: var(--line-2); }
+  .venue-pill .v-name { font-weight: 600; font-size: 13px; }
+  .venue-pill .v-loc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .venue-pill svg { color: var(--text-3); }
+
+  .nav-label {
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 10.5px; color: var(--text-3); font-weight: 600;
+    padding: 8px 12px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; border-radius: 8px;
+    color: var(--text-2); font-weight: 500;
+    cursor: pointer; user-select: none;
+    margin-bottom: 2px;
+  }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(180deg, rgba(27,158,75,0.22), rgba(27,158,75,0.10));
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(27,158,75,0.35);
+  }
+  .nav-item.active svg { color: var(--green); }
+  .nav-item .badge {
+    margin-left: auto;
+    background: var(--green); color: white;
+    font-size: 10.5px; font-weight: 700;
+    padding: 2px 7px; border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .nav-item.active .badge { background: rgba(255,255,255,0.18); }
+
+  .sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+  .user-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .user-card:hover { background: rgba(255,255,255,0.03); }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #4C8DF5, #1B9E4B);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px; color: white;
+  }
+  .user-name { font-weight: 600; font-size: 13px; }
+  .user-role { font-size: 11px; color: var(--text-3); }
+
+  /* ---------- Main ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    height: 64px; padding: 0 28px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    display: flex; align-items: center; gap: 18px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .crumbs { display: flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 13px; }
+  .crumbs .sep { color: var(--text-3); }
+  .crumbs .here { color: var(--text); font-weight: 600; }
+  .topbar .grow { flex: 1; }
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 7px 12px; border-radius: 8px;
+    width: 280px; color: var(--text-2);
+  }
+  .search input {
+    background: none; border: 0; outline: 0; color: var(--text);
+    font-family: inherit; font-size: 13px; flex: 1;
+  }
+  .search .kbd {
+    border: 1px solid var(--line-2); padding: 1px 6px;
+    border-radius: 4px; font-size: 10.5px; color: var(--text-3);
+  }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel);
+    display: grid; place-items: center; cursor: pointer; color: var(--text-2);
+    position: relative;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--line-2); }
+  .icon-btn .dot {
+    position: absolute; top: 7px; right: 8px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 0 2px var(--bg);
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 14px; border-radius: 8px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--green); color: white;
+    box-shadow: 0 6px 18px rgba(27,158,75,0.30), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .btn-primary:hover { background: var(--green-deep); }
+  .btn-ghost { background: var(--panel); color: var(--text); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--line-2); }
+
+  .content {
+    padding: 28px; display: flex; flex-direction: column; gap: 24px;
+  }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; font-weight: 700; }
+  .page-head h1 em { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--green); letter-spacing: -0.01em; }
+  .page-head p { margin: 6px 0 0; color: var(--text-2); font-size: 13.5px; }
+  .page-head .right { display: flex; gap: 10px; align-items: center; }
+
+  /* ---------- Metric cards ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card .label {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-2); font-size: 12.5px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .card .label .ico {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--green-soft); color: var(--green);
+    display: grid; place-items: center;
+  }
+  .card .label .ico svg { width: 14px; height: 14px; }
+  .card .label.amber .ico { background: var(--amber-soft); color: var(--amber); }
+  .card .label.blue .ico { background: rgba(76,141,245,0.14); color: var(--blue); }
+  .card .label.red .ico { background: var(--red-soft); color: var(--red); }
+  .card .value {
+    margin-top: 14px;
+    font-size: 34px; font-weight: 700; letter-spacing: -0.035em;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-feature-settings: 'tnum';
+  }
+  .card .sub { margin-top: 6px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); }
+  .delta { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .delta.up { color: var(--green); }
+  .delta.down { color: var(--red); }
+  .spark { position: absolute; right: 16px; top: 18px; width: 84px; height: 32px; opacity: 0.85; }
+  .ring { position: absolute; right: 18px; top: 18px; }
+
+  /* ---------- Calendar ---------- */
+  .cal-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .cal-toolbar {
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cal-title { font-weight: 700; font-size: 16.5px; letter-spacing: -0.02em; }
+  .cal-week { color: var(--text-2); font-size: 13px; margin-left: 6px; }
+  .seg {
+    display: flex; background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden;
+  }
+  .seg button {
+    background: none; border: 0; padding: 7px 14px;
+    color: var(--text-2); font-family: inherit; font-size: 12.5px; font-weight: 600;
+    cursor: pointer;
+  }
+  .seg button.on { background: var(--panel-2); color: var(--text); }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 100px; cursor: pointer;
+    background: var(--bg-2); border: 1px solid var(--line);
+    font-size: 12px; color: var(--text-2); font-weight: 500;
+  }
+  .filter-chip .swatch { width: 8px; height: 8px; border-radius: 50%; }
+  .filter-chip.active { color: var(--text); border-color: var(--line-2); }
+  .legend { display: flex; gap: 8px; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: 64px repeat(7, 1fr);
+    border-top: 1px solid var(--line);
+  }
+  .cal-head {
+    padding: 10px 8px; text-align: center;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-2);
+    font-size: 11.5px; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .cal-head .dnum { display: block; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: var(--text); margin-top: 3px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+  .cal-head.today .dnum {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    background: var(--green); color: white; margin-top: 3px;
+  }
+  .cal-corner {
+    background: var(--bg-2); border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .hour-cell {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 6px 8px; text-align: right;
+    font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-2);
+    height: 56px;
+  }
+  .day-col {
+    position: relative;
+    border-right: 1px solid var(--line);
+  }
+  .day-col.today { background: rgba(27,158,75,0.04); }
+  .day-cell {
+    height: 56px; border-bottom: 1px solid var(--line);
+  }
+  .day-cell:hover { background: rgba(255,255,255,0.025); cursor: pointer; }
+
+  /* Reservation chip placed absolutely inside .day-col */
+  .resv {
+    position: absolute; left: 4px; right: 4px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 11.5px; line-height: 1.3;
+    overflow: hidden;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .resv .rt { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .resv .ru { color: var(--text-2); margin-top: 2px; font-size: 11px; }
+  .resv .rh { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; opacity: 0.8; }
+  .resv.confirmed {
+    background: linear-gradient(180deg, rgba(27,158,75,0.20), rgba(27,158,75,0.10));
+    border-color: var(--green-line);
+    box-shadow: inset 3px 0 0 var(--green);
+  }
+  .resv.pending {
+    background: linear-gradient(180deg, rgba(242,181,68,0.16), rgba(242,181,68,0.08));
+    border-color: rgba(242,181,68,0.45);
+    box-shadow: inset 3px 0 0 var(--amber);
+  }
+  .resv.canceled {
+    background: linear-gradient(180deg, rgba(229,72,77,0.14), rgba(229,72,77,0.07));
+    border-color: rgba(229,72,77,0.45);
+    box-shadow: inset 3px 0 0 var(--red);
+    text-decoration: line-through;
+    opacity: 0.85;
+  }
+  .resv.canceled .rt, .resv.canceled .ru { color: var(--text-2); }
+  .resv .pill {
+    font-size: 9.5px; font-weight: 700;
+    padding: 1px 5px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pill.green { background: rgba(27,158,75,0.30); color: #B6F5CF; }
+  .pill.amber { background: rgba(242,181,68,0.30); color: #FFE3A8; }
+  .pill.red { background: rgba(229,72,77,0.30); color: #FFC7C9; }
+
+  /* now-line */
+  .now-line {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: var(--green); z-index: 4;
+    box-shadow: 0 0 0 2px rgba(27,158,75,0.18);
+  }
+  .now-line::before {
+    content: ''; position: absolute; left: -5px; top: -4px;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 3px rgba(27,158,75,0.25);
+  }
+
+  /* ---------- Modal ---------- */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(5, 12, 22, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 100; display: grid; place-items: center;
+  }
+  .modal {
+    width: 560px; background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    max-height: 92vh;
+  }
+  .modal-head {
+    padding: 20px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .modal-head .ico {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--green-soft); color: var(--green);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .modal-head h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .modal-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-2); }
+  .modal-head .close {
+    margin-left: auto; background: none; border: 0; color: var(--text-3);
+    cursor: pointer; padding: 4px; border-radius: 6px;
+  }
+  .modal-head .close:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  .modal-body { padding: 20px 24px; overflow: auto; }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 11.5px; font-weight: 600;
+    color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .input, .select {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 8px; color: var(--text);
+    font-family: inherit; font-size: 13.5px;
+    outline: none;
+  }
+  .input:focus, .select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(27,158,75,0.18); }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .court-card {
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    border-radius: 10px;
+    padding: 10px; cursor: pointer;
+    text-align: left;
+  }
+  .court-card.sel { border-color: var(--green); background: var(--green-soft); }
+  .court-card .ct { font-weight: 600; font-size: 12.5px; }
+  .court-card .cs { font-size: 11px; color: var(--text-3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .hour-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+  }
+  .hour-btn {
+    padding: 8px 0; text-align: center;
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--text-2); cursor: pointer;
+  }
+  .hour-btn.taken { opacity: 0.35; text-decoration: line-through; cursor: not-allowed; }
+  .hour-btn.sel { background: var(--green); color: white; border-color: var(--green); font-weight: 600; }
+  .hour-btn:hover:not(.taken):not(.sel) { border-color: var(--line-2); color: var(--text); }
+
+  .summary {
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px;
+    margin-top: 4px;
+  }
+  .summary .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12.5px; color: var(--text-2); }
+  .summary .row.total { border-top: 1px dashed var(--line-2); margin-top: 6px; padding-top: 10px; font-size: 14px; color: var(--text); font-weight: 600; }
+  .summary .row .v { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
+  .modal-foot {
+    padding: 16px 24px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-2);
+  }
+  .modal-foot .grow { flex: 1; }
+  .wompi-btn {
+    background: linear-gradient(180deg, #1B9E4B, #14823C);
+    color: white;
+    padding: 11px 18px;
+    box-shadow: 0 8px 22px rgba(27,158,75,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+    font-size: 13.5px;
+  }
+  .wompi-btn:hover { filter: brightness(1.05); }
+  .wompi-mark {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.18);
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 10.5px; letter-spacing: 0.04em;
+  }
+  .secure-note {
+    font-size: 11.5px; color: var(--text-3);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+  }
+  .toggle input { display: none; }
+  .toggle .track {
+    width: 34px; height: 20px; border-radius: 100px;
+    background: var(--bg-2); border: 1px solid var(--line);
+    position: relative; transition: 0.15s;
+  }
+  .toggle .track::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text-2); transition: 0.15s;
+  }
+  .toggle input:checked + .track { background: var(--green); border-color: var(--green); }
+  .toggle input:checked + .track::after { background: white; transform: translateX(14px); }
+  .toggle .lbl { font-size: 12.5px; color: var(--text-2); }
+
+</style>
+</head>
+<body>
+
+<div class="app" data-screen-label="01 Dashboard Admin">
+
+  <!-- ============= SIDEBAR ============= -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <!-- ball / pin combined glyph -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3 L14 8 L12 12 L10 8 Z" fill="white"/>
+          <path d="M3 12 L8 10 L12 12 L8 14 Z"/>
+          <path d="M21 12 L16 10 L12 12 L16 14 Z"/>
+        </svg>
+      </div>
+      <div class="logo-name">Reserva<span>Cancha</span></div>
+    </div>
+
+    <div class="venue-pill">
+      <div>
+        <div class="v-name">Cancha Los Llaneros</div>
+        <div class="v-loc">Villavicencio · Meta</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <div class="nav-label">Operación</div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Reservas
+      <span class="badge">12</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="1"/><line x1="12" y1="6" x2="12" y2="18"/><circle cx="12" cy="12" r="2.2"/></svg>
+      Canchas
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M5 4h14v5a7 7 0 0 1-14 0V4z"/><path d="M19 5h2a2 2 0 0 1-2 4"/><path d="M5 5H3a2 2 0 0 0 2 4"/></svg>
+      Torneos
+      <span class="badge">3</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Pagos
+    </div>
+
+    <div class="nav-label" style="margin-top: 8px;">Sistema</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuración
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">CR</div>
+        <div>
+          <div class="user-name">Camilo Ríos</div>
+          <div class="user-role">Administrador</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" style="margin-left:auto"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============= MAIN ============= -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="crumbs">
+        <span>Cancha Los Llaneros</span>
+        <span class="sep">/</span>
+        <span class="here">Dashboard</span>
+      </div>
+      <div class="grow"></div>
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Buscar reserva, cliente, equipo…" />
+        <span class="kbd">⌘K</span>
+      </div>
+      <button class="icon-btn" title="Notificaciones">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="icon-btn" title="Ayuda">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+      <button class="btn btn-primary" id="openModal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva reserva
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- Page head -->
+      <div class="page-head">
+        <div>
+          <h1>Buenos días, <em>Camilo</em></h1>
+          <p>Hoy hay <b style="color:var(--text)">12 reservas</b> programadas · 3 partidos en curso · 2 pendientes de pago.</p>
+        </div>
+        <div class="right">
+          <button class="btn btn-ghost">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar
+          </button>
+          <div class="seg" role="tablist">
+            <button>Día</button>
+            <button class="on">Semana</button>
+            <button>Mes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric cards -->
+      <section class="metrics">
+        <div class="card">
+          <div class="label">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            Reservas hoy
+          </div>
+          <div class="value">12</div>
+          <div class="sub">
+            <span class="delta up">▲ 18%</span>
+            vs. ayer
+          </div>
+          <svg class="spark" viewBox="0 0 84 32" preserveAspectRatio="none">
+            <polyline points="0,22 12,18 24,24 36,16 48,20 60,10 72,14 84,6" fill="none" stroke="#1B9E4B" stroke-width="1.8" stroke-linejoin="round"/>
+            <polyline points="0,22 12,18 24,24 36,16 48,20 60,10 72,14 84,6 84,32 0,32" fill="rgba(27,158,75,0.18)" stroke="none"/>
+          </svg>
+        </div>
+
+        <div class="card">
+          <div class="label blue">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+            Ingresos del mes
+          </div>
+          <div class="value">$8,420,000</div>
+          <div class="sub">
+            <span class="delta up">▲ 12.4%</span>
+            vs. mes anterior · meta 75%
+          </div>
+          <svg class="spark" viewBox="0 0 84 32" preserveAspectRatio="none">
+            <polyline points="0,26 12,22 24,18 36,20 48,12 60,14 72,8 84,4" fill="none" stroke="#4C8DF5" stroke-width="1.8" stroke-linejoin="round"/>
+            <polyline points="0,26 12,22 24,18 36,20 48,12 60,14 72,8 84,4 84,32 0,32" fill="rgba(76,141,245,0.18)" stroke="none"/>
+          </svg>
+        </div>
+
+        <div class="card">
+          <div class="label amber">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            Tasa de ocupación
+          </div>
+          <div class="value">78<span style="color:var(--text-3); font-size:22px">%</span></div>
+          <div class="sub">
+            <span class="delta up">▲ 4 pts</span>
+            14 horas / 18 disponibles
+          </div>
+          <svg class="ring" width="56" height="56" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="22" stroke="rgba(255,255,255,0.08)" stroke-width="6" fill="none"/>
+            <circle cx="28" cy="28" r="22" stroke="#F2B544" stroke-width="6" fill="none"
+              stroke-dasharray="138.23" stroke-dashoffset="30.4" stroke-linecap="round"
+              transform="rotate(-90 28 28)"/>
+          </svg>
+        </div>
+
+        <div class="card">
+          <div class="label red">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>
+            No-shows
+          </div>
+          <div class="value">3<span style="color:var(--text-3); font-size:22px"> / sem</span></div>
+          <div class="sub">
+            <span class="delta down">▼ 1</span>
+            vs. semana anterior
+          </div>
+          <svg class="spark" viewBox="0 0 84 32" preserveAspectRatio="none">
+            <polyline points="0,8 12,12 24,6 36,14 48,18 60,12 72,20 84,22" fill="none" stroke="#E5484D" stroke-width="1.8" stroke-linejoin="round"/>
+            <polyline points="0,8 12,12 24,6 36,14 48,18 60,12 72,20 84,22 84,32 0,32" fill="rgba(229,72,77,0.14)" stroke="none"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- Calendar -->
+      <section class="cal-card">
+        <div class="cal-toolbar">
+          <button class="icon-btn" style="width:32px;height:32px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="icon-btn" style="width:32px;height:32px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <div>
+            <div class="cal-title">Mayo 2026 <span class="cal-week">· Sem 19 · 4 — 10 may</span></div>
+          </div>
+          <button class="btn btn-ghost" style="margin-left:8px; padding:6px 12px; font-size:12px;">Hoy</button>
+
+          <div style="flex:1"></div>
+
+          <select class="select" style="width:auto; padding:7px 10px; font-size:12.5px;">
+            <option>Todas las canchas</option>
+            <option>Cancha 1 · F-5 sintética</option>
+            <option>Cancha 2 · F-5 sintética</option>
+            <option>Cancha 3 · F-8 grama</option>
+          </select>
+
+          <div class="legend">
+            <span class="filter-chip active"><span class="swatch" style="background:var(--green)"></span> Confirmadas</span>
+            <span class="filter-chip active"><span class="swatch" style="background:var(--amber)"></span> Pendientes</span>
+            <span class="filter-chip active"><span class="swatch" style="background:var(--red)"></span> Canceladas</span>
+          </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="cal-grid" id="calGrid">
+          <div class="cal-corner"></div>
+          <!-- day heads filled by JS -->
+        </div>
+      </section>
+
+      <p style="text-align:center; color: var(--text-3); font-size:11.5px; margin: 8px 0 0;">
+        ReservaCancha v2.4 · Última sincronización hace 2 min · Soporte: <span style="color:var(--green)">+57 318 555 0142</span>
+      </p>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============= MODAL: Nueva Reserva ============= -->
+<div class="scrim" id="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="modal-head">
+      <div class="ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+      </div>
+      <div>
+        <h2 id="mt">Nueva reserva</h2>
+        <p>Sábado · 9 may 2026 · Cancha Los Llaneros</p>
+      </div>
+      <button class="close" id="closeModal" aria-label="Cerrar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="field">
+        <label>Cancha</label>
+        <div class="row-3">
+          <button class="court-card sel" type="button">
+            <div class="ct">Cancha 1</div>
+            <div class="cs">F-5 · Sintética</div>
+          </button>
+          <button class="court-card" type="button">
+            <div class="ct">Cancha 2</div>
+            <div class="cs">F-5 · Sintética</div>
+          </button>
+          <button class="court-card" type="button">
+            <div class="ct">Cancha 3</div>
+            <div class="cs">F-8 · Grama nat.</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Fecha</label>
+          <input class="input" type="text" value="Sábado, 9 may 2026" />
+        </div>
+        <div class="field">
+          <label>Duración</label>
+          <select class="select">
+            <option>60 minutos</option>
+            <option selected>90 minutos</option>
+            <option>120 minutos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Hora de inicio</label>
+        <div class="hour-grid">
+          <button class="hour-btn taken" type="button">14:00</button>
+          <button class="hour-btn taken" type="button">15:00</button>
+          <button class="hour-btn" type="button">16:00</button>
+          <button class="hour-btn" type="button">17:00</button>
+          <button class="hour-btn sel" type="button">18:00</button>
+          <button class="hour-btn" type="button">19:00</button>
+          <button class="hour-btn" type="button">20:00</button>
+          <button class="hour-btn taken" type="button">21:00</button>
+          <button class="hour-btn" type="button">22:00</button>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Equipo / Jugador</label>
+          <input class="input" type="text" value="Halcones FC — Andrés Mejía" />
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input class="input" type="text" value="+57 318 421 0987" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Anticipo a cobrar</label>
+        <div class="row-2">
+          <input class="input mono" type="text" value="$ 60.000" />
+          <select class="select">
+            <option>50% del valor</option>
+            <option>100% del valor</option>
+            <option>Monto fijo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="row"><span>Cancha 1 · F-5 · 90 min</span><span class="v">$ 120.000</span></div>
+        <div class="row"><span>Iluminación nocturna</span><span class="v">$ 0</span></div>
+        <div class="row"><span>Anticipo (50%)</span><span class="v">$ 60.000</span></div>
+        <div class="row"><span>Saldo en cancha</span><span class="v" style="color:var(--text-2)">$ 60.000</span></div>
+        <div class="row total"><span>Total a cobrar ahora</span><span class="v" style="color:var(--green)">$ 60.000 COP</span></div>
+      </div>
+
+      <label class="toggle" style="margin-top: 14px;">
+        <input type="checkbox" checked />
+        <span class="track"></span>
+        <span class="lbl">Enviar link de pago por WhatsApp al cliente</span>
+      </label>
+    </div>
+
+    <div class="modal-foot">
+      <span class="secure-note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Pago seguro · PCI DSS
+      </span>
+      <div class="grow"></div>
+      <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
+      <button class="btn wompi-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirmar y cobrar con
+        <span class="wompi-mark">Wompi</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ----- Build calendar -----
+(function () {
+  const grid = document.getElementById('calGrid');
+  const days = [
+    { lbl: 'Lun', n: 4 },
+    { lbl: 'Mar', n: 5 },
+    { lbl: 'Mié', n: 6 },
+    { lbl: 'Jue', n: 7 },
+    { lbl: 'Vie', n: 8 },
+    { lbl: 'Sáb', n: 9, today: true },
+    { lbl: 'Dom', n: 10 },
+  ];
+  const HOURS = []; for (let h = 6; h <= 22; h++) HOURS.push(h);
+
+  // Day heads
+  days.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-head' + (d.today ? ' today' : '');
+    el.innerHTML = `${d.lbl}<span class="dnum">${d.n}</span>`;
+    grid.appendChild(el);
+  });
+
+  // Hour rows: hour cell + 7 day cells. We'll create 7 day-col containers with absolute reservations.
+  // Strategy: create the hour column (17 cells), then 7 day columns (each containing hour cells + reservations).
+  // To keep grid alignment, we'll generate row-by-row.
+  // Instead, we’ll use a simpler approach: create a parent grid where each row = 1 hour cell + 7 day cells (no absolute).
+  // Reservations placed via separate floating layer per day column.
+
+  // Build rows
+  HOURS.forEach((h, rowIdx) => {
+    const hc = document.createElement('div');
+    hc.className = 'hour-cell';
+    const t = h > 12 ? `${h - 12}:00 PM` : `${h}:00 ${h===12?'PM':'AM'}`;
+    hc.textContent = t;
+    grid.appendChild(hc);
+    days.forEach((d, dayIdx) => {
+      const c = document.createElement('div');
+      c.className = 'day-cell' + (d.today ? ' today-cell' : '');
+      if (d.today) c.style.background = 'rgba(27,158,75,0.04)';
+      grid.appendChild(c);
+    });
+  });
+
+  // Now overlay reservations using absolute positioning relative to the grid.
+  // Each row is 56px tall, hour col 64px wide, day cols share remaining width.
+  // We'll insert a dedicated overlay per day col for cleaner rendering.
+
+  // Actually it's easier to just inject .resv blocks as grid items spanning multiple rows.
+  // Let's redo: use grid-row spanning.
+
+  // Clear and rebuild as a true CSS grid with row spans.
+  grid.innerHTML = '';
+  grid.style.gridTemplateRows = `auto repeat(${HOURS.length}, 56px)`;
+
+  // header row
+  const corner = document.createElement('div');
+  corner.className = 'cal-corner';
+  grid.appendChild(corner);
+  days.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-head' + (d.today ? ' today' : '');
+    el.innerHTML = `${d.lbl}<span class="dnum">${d.n}</span>`;
+    grid.appendChild(el);
+  });
+
+  // hour rows
+  HOURS.forEach((h, rowIdx) => {
+    const hc = document.createElement('div');
+    hc.className = 'hour-cell';
+    hc.style.gridColumn = '1';
+    hc.style.gridRow = `${rowIdx + 2}`;
+    const t = h > 12 ? `${h - 12}:00 PM` : (h === 12 ? '12:00 PM' : `${h}:00 AM`);
+    hc.textContent = t;
+    grid.appendChild(hc);
+    days.forEach((d, dayIdx) => {
+      const c = document.createElement('div');
+      c.className = 'day-cell';
+      c.style.gridColumn = `${dayIdx + 2}`;
+      c.style.gridRow = `${rowIdx + 2}`;
+      if (d.today) c.style.background = 'rgba(27,158,75,0.04)';
+      grid.appendChild(c);
+    });
+  });
+
+  // Reservations (day index 0..6, start hour, end hour, status, team, court)
+  const resvs = [
+    // Lun 4
+    { day:0, s:7, e:8, st:'confirmed', t:'Tigres del Llano', u:'Cancha 1 · F-5' },
+    { day:0, s:18, e:20, st:'confirmed', t:'Real Villavo', u:'Cancha 2 · F-5' },
+    // Mar 5
+    { day:1, s:9, e:10, st:'confirmed', t:'Esc. Infantil', u:'Cancha 3 · F-8' },
+    { day:1, s:17, e:18, st:'pending', t:'Andrés Mejía', u:'Cancha 1 · pago pendiente' },
+    { day:1, s:19, e:21, st:'confirmed', t:'Liga Empresarial', u:'Cancha 3 · F-8' },
+    // Mié 6
+    { day:2, s:8, e:9, st:'canceled', t:'Halcones FC', u:'Cancancelada' },
+    { day:2, s:16, e:18, st:'confirmed', t:'Coca-Cola FEMSA', u:'Cancha 2 · evento' },
+    { day:2, s:20, e:22, st:'pending', t:'Pumas del Meta', u:'Cancha 1 · transf. en revisión' },
+    // Jue 7
+    { day:3, s:10, e:11, st:'confirmed', t:'Carlos Patiño', u:'Cancha 1 · F-5' },
+    { day:3, s:18, e:19, st:'confirmed', t:'Banco Agrario', u:'Cancha 2 · F-5' },
+    { day:3, s:19, e:20, st:'pending', t:'Águilas Llaneras', u:'Cancha 3 · esperando anticipo' },
+    // Vie 8
+    { day:4, s:7, e:8, st:'confirmed', t:'Madrugadores', u:'Cancha 1 · F-5' },
+    { day:4, s:15, e:17, st:'confirmed', t:'Torneo Interbarrios', u:'Cancha 3 · F-8' },
+    { day:4, s:18, e:19, st:'canceled', t:'Los Capibaras', u:'Cancelada por lluvia' },
+    { day:4, s:20, e:22, st:'confirmed', t:'Real Apiay', u:'Cancha 2 · F-5' },
+    // Sáb 9 (HOY)
+    { day:5, s:8, e:9, st:'confirmed', t:'Esc. Sub-12', u:'Cancha 3 · entrenamiento' },
+    { day:5, s:9, e:10, st:'confirmed', t:'Esc. Sub-15', u:'Cancha 3 · entrenamiento' },
+    { day:5, s:14, e:16, st:'confirmed', t:'Llaneros FC', u:'Cancha 2 · partido oficial' },
+    { day:5, s:18, e:19.5, st:'pending', t:'Halcones FC — A. Mejía', u:'Cancha 1 · creando…' },
+    { day:5, s:20, e:22, st:'confirmed', t:'Selección Meta U17', u:'Cancha 3 · F-8' },
+    // Dom 10
+    { day:6, s:8, e:10, st:'confirmed', t:'Liga Dominical', u:'Cancha 1 · F-5' },
+    { day:6, s:10, e:12, st:'confirmed', t:'Liga Dominical', u:'Cancha 2 · F-5' },
+    { day:6, s:15, e:16, st:'pending', t:'Daniel Ortiz', u:'Cancha 1 · pago pendiente' },
+    { day:6, s:17, e:19, st:'confirmed', t:'Cumpleaños Mateo', u:'Cancha 3 · evento' },
+  ];
+
+  resvs.forEach(r => {
+    const startRow = (r.s - 6) + 2; // +2 for header row
+    const endRow = (r.e - 6) + 2;
+    const el = document.createElement('div');
+    el.className = 'resv ' + r.st;
+    el.style.gridColumn = `${r.day + 2}`;
+    el.style.gridRow = `${startRow} / ${endRow}`;
+    el.style.position = 'relative';
+    el.style.margin = '3px 4px';
+    const pillCls = r.st === 'confirmed' ? 'green' : (r.st === 'pending' ? 'amber' : 'red');
+    const pillTxt = r.st === 'confirmed' ? 'OK' : (r.st === 'pending' ? 'PEND' : 'CANC');
+    const startStr = `${r.s}:00`;
+    const endH = Math.floor(r.e), endM = (r.e % 1) * 60;
+    const endStr = `${endH}:${String(endM).padStart(2,'0')}`;
+    el.innerHTML = `
+      <div class="rt">${r.t}<span class="pill ${pillCls}">${pillTxt}</span></div>
+      <div class="ru">${r.u}</div>
+      <div class="rh">${startStr}–${endStr}</div>
+    `;
+    grid.appendChild(el);
+  });
+
+  // "Now" line at Saturday (today col, day 5) at ~11:25 AM = row offset
+  const nowRow = (11 - 6) + 2; // 11am row
+  const nowOffset = 0.42; // fraction into hour
+  const overlay = document.createElement('div');
+  overlay.style.gridColumn = `${5 + 2}`;
+  overlay.style.gridRow = `${nowRow}`;
+  overlay.style.position = 'relative';
+  overlay.style.pointerEvents = 'none';
+  overlay.innerHTML = `<div class="now-line" style="top: ${nowOffset * 100}%"></div>`;
+  grid.appendChild(overlay);
+})();
+
+// ----- Modal toggle -----
+const modal = document.getElementById('modal');
+document.getElementById('openModal').onclick = () => modal.style.display = 'grid';
+document.getElementById('closeModal').onclick = () => modal.style.display = 'none';
+document.getElementById('cancelModal').onclick = () => modal.style.display = 'none';
+modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+// Court cards toggle
+document.querySelectorAll('.court-card').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('.court-card').forEach(x => x.classList.remove('sel'));
+  c.classList.add('sel');
+}));
+// Hour buttons
+document.querySelectorAll('.hour-btn:not(.taken)').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.hour-btn').forEach(x => x.classList.remove('sel'));
+  b.classList.add('sel');
+}));
+</script>
+
+</body>
+</html>

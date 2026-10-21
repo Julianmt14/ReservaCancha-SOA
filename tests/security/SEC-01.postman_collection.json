@@ -1,0 +1,1843 @@
+{
+  "info": {
+    "name": "ReservaCancha - SEC-01 accesos no autorizados",
+    "description": "Ficha SEC-01: 0 accesos no autorizados exitosos. Cada caso negativo falla si la API responde 2xx.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Preparacion (usuarios y reserva de prueba)",
+      "item": [
+        {
+          "name": "Login administrador (semilla)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login admin 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@reservacancha.co\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registro jugador A",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('emailA', 'a' + Date.now() + '@sec01.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('registro A 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('rol asignado JUGADOR', () => pm.expect(j.rol).to.eql('JUGADOR'));",
+                  "pm.collectionVariables.set('tokenA', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Jugador A\",\n  \"email\": \"{{emailA}}\",\n  \"password\": \"Clave-segura-1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registro jugador B",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('emailB', 'b' + Date.now() + '@sec01.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('registro B 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('tokenB', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Jugador B\",\n  \"email\": \"{{emailB}}\",\n  \"password\": \"Clave-segura-2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Jugador A crea una reserva",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dia = String(1 + Math.floor(Math.random() * 28)).padStart(2, '0');",
+                  "const hora = 6 + Math.floor(Math.random() * 14);",
+                  "pm.collectionVariables.set('fecha', '2031-03-' + dia);",
+                  "pm.collectionVariables.set('horaInicio', String(hora).padStart(2, '0') + ':00:00');",
+                  "pm.collectionVariables.set('horaFin', String(hora + 1).padStart(2, '0') + ':00:00');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reserva creada 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('reservaA', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"{{horaInicio}}\",\n  \"horaFin\": \"{{horaFin}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Sin token",
+      "item": [
+        {
+          "name": "GET /api/reservas/mias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/reservas/mias sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/reservas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/reservas sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 1,\n  \"fecha\": \"2031-04-01\",\n  \"horaInicio\": \"10:00:00\",\n  \"horaFin\": \"11:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/reservas/{{reservaA}}/cancelar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/reservas/{{reservaA}}/cancelar sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaA}}/cancelar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaA}}",
+                "cancelar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/reservas/cancha/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/reservas/cancha/1 sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/cancha/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "cancha",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/admin/resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/admin/resumen sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/admin/reservas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/admin/reservas sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reservas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/admin/pagos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/admin/pagos sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "pagos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/canchas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/canchas sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intrusa\",\n  \"precioHora\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/canchas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/canchas/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"PUT /api/canchas/1 sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Hackeada\",\n  \"precioHora\": 1,\n  \"activa\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/canchas/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/horarios/cancha/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/horarios/cancha/1 sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/horarios/cancha/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "cancha",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/horarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/horarios sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 1,\n  \"diaSemana\": \"MONDAY\",\n  \"horaApertura\": \"06:00\",\n  \"horaCierre\": \"22:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/horarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "horarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/pagos/iniciar/{{reservaA}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/pagos/iniciar/{{reservaA}} sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/iniciar/{{reservaA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "iniciar",
+                "{{reservaA}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/pagos/reserva/{{reservaA}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"GET /api/pagos/reserva/{{reservaA}} sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/reserva/{{reservaA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "reserva",
+                "{{reservaA}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/pagos/confirmar/{{reservaA}}?transactionId=abc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"POST /api/pagos/confirmar/{{reservaA}}?transactionId=abc sin token\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/confirmar/{{reservaA}}?transactionId=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "confirmar",
+                "{{reservaA}}"
+              ],
+              "query": [
+                {
+                  "key": "transactionId",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Token invalido",
+      "item": [
+        {
+          "name": "Texto aleatorio: GET /api/admin/resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Texto aleatorio en /api/admin/resumen\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer esto-no-es-un-jwt"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Texto aleatorio: GET /api/reservas/mias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Texto aleatorio en /api/reservas/mias\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer esto-no-es-un-jwt"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "JWT con firma falsa: GET /api/admin/resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"JWT con firma falsa en /api/admin/resumen\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNlcnZhY2FuY2EuY28ifQ.firma-invalida"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "JWT con firma falsa: GET /api/reservas/mias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"JWT con firma falsa en /api/reservas/mias\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNlcnZhY2FuY2EuY28ifQ.firma-invalida"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "JWT mal formado: GET /api/admin/resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"JWT mal formado en /api/admin/resumen\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiJhZG1pbkByZXNlcnZhY2FuY2EuY28ifQ."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "JWT mal formado: GET /api/reservas/mias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"JWT mal formado en /api/reservas/mias\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiJhZG1pbkByZXNlcnZhY2FuY2EuY28ifQ."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Rol insuficiente (JUGADOR)",
+      "item": [
+        {
+          "name": "GET /api/admin/resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador GET /api/admin/resumen\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/admin/reservas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador GET /api/admin/reservas\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reservas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/admin/pagos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador GET /api/admin/pagos\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "pagos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/canchas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador POST /api/canchas\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intrusa\",\n  \"precioHora\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/canchas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/canchas/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador PUT /api/canchas/1\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Hackeada\",\n  \"precioHora\": 1,\n  \"activa\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/canchas/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/horarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador POST /api/horarios\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 1,\n  \"diaSemana\": \"MONDAY\",\n  \"horaApertura\": \"06:00\",\n  \"horaCierre\": \"22:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/horarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "horarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/horarios/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador PUT /api/horarios/1\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 1,\n  \"diaSemana\": \"MONDAY\",\n  \"horaApertura\": \"06:00\",\n  \"horaCierre\": \"22:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/horarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/horarios/1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"jugador DELETE /api/horarios/1\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/horarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Escalada de privilegios",
+      "item": [
+        {
+          "name": "Registro publico con rol ADMIN",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('emailAdmin', 'x' + Date.now() + '@sec01.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"registro con rol ADMIN\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Aspirante\",\n  \"email\": \"{{emailAdmin}}\",\n  \"password\": \"Clave-segura-3\",\n  \"rol\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "La cuenta con rol ADMIN no quedo creada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login de la cuenta rechazado', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailAdmin}}\",\n  \"password\": \"Clave-segura-3\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Recursos de otro usuario (jugador B sobre reserva de A)",
+      "item": [
+        {
+          "name": "B inicia pago de la reserva de A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"B inicia pago ajeno\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/iniciar/{{reservaA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "iniciar",
+                "{{reservaA}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "B consulta pagos de la reserva de A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"B consulta pagos ajenos\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/reserva/{{reservaA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "reserva",
+                "{{reservaA}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "B confirma pago de la reserva de A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"B confirma pago ajeno\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/confirmar/{{reservaA}}?transactionId=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "confirmar",
+                "{{reservaA}}"
+              ],
+              "query": [
+                {
+                  "key": "transactionId",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "B cancela la reserva de A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"B cancela reserva ajena\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaA}}/cancelar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaA}}",
+                "cancelar"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Webhook de Wompi",
+      "item": [
+        {
+          "name": "Sin secreto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"webhook sin secreto\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referencia\": \"RC-1-0\",\n  \"transactionId\": \"x\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wompi/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wompi",
+                "webhook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Secreto incorrecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"webhook con secreto incorrecto\" + ' -> 401/403 (sin acceso)', function () {",
+                  "  pm.expect(pm.response.code, 'status recibido').to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Webhook-Secret",
+                "value": "secreto-incorrecto"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referencia\": \"RC-1-0\",\n  \"transactionId\": \"x\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wompi/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wompi",
+                "webhook"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Exposicion de datos",
+      "item": [
+        {
+          "name": "Jugador A: mis reservas no incluyen el hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('la respuesta no expone hashes de contrasena', function () {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.match(/\"password\"/i);",
+                  "  pm.expect(body).to.not.include('$2a$');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Administrador: todas las reservas no incluyen hashes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('la respuesta no expone hashes de contrasena', function () {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.match(/\"password\"/i);",
+                  "  pm.expect(body).to.not.include('$2a$');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reservas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Jugador: la ocupacion de una cancha no revela nombres",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('sin nombre de jugador', function () {",
+                  "  pm.response.json().forEach(b => pm.expect(b).to.not.have.property('jugador'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/cancha/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "cancha",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Controles positivos (el acceso legitimo sigue funcionando)",
+      "item": [
+        {
+          "name": "Administrador: resumen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "resumen"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Jugador A: lista canchas (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/canchas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Jugador A inicia pago de su reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('trae referencia y firma de integridad', () => { pm.expect(j.referencia).to.be.a('string'); pm.expect(j.firmaIntegridad).to.have.lengthOf(64); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/iniciar/{{reservaA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "iniciar",
+                "{{reservaA}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Jugador A cancela su reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaA}}/cancelar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaA}}",
+                "cancelar"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}

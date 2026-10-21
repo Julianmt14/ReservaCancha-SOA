@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: reservacancha
+  datasource:
+    # Por defecto H2 en memoria (dev rápido). Para Postgres descomentar y usar docker-compose.
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:reservacancha;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+  jpa:
+    # Las consultas terminan en la capa de servicio; no se mantienen abiertas durante la serializacion JSON
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: always
+
+app:
+  cors:
+    origins: ${CORS_ORIGINS:http://localhost:3000}
+  jwt:
+    secret: ${JWT_SECRET:cGFyYS1kZXYtbXV5LXNlY3JldG8tbXV5LWxhcmdvLXJlc2VydmFjYW5jaGEtY29sb21iaWE=}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  wompi:
+    environment: sandbox
+    public-key: ${WOMPI_PUBLIC_KEY:pub_test_XXXX}
+    private-key: ${WOMPI_PRIVATE_KEY:prv_test_XXXX}
+    integrity-secret: ${WOMPI_INTEGRITY_SECRET:test_integrity_XXXX}
+    events-secret: ${WOMPI_EVENTS_SECRET:test_events_XXXX}
+    base-url: ${WOMPI_BASE_URL:https://sandbox.wompi.co/v1}
+    currency: COP

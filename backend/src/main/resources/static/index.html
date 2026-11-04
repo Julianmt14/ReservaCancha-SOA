@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReservaCancha</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<!-- Interfaz web de la consumidora: HTML, CSS y JavaScript con fetch a /api (puerto 8080) -->
+<header class="barra">
+  <div class="marca">reserva<b>cancha</b></div>
+  <nav id="menu">
+    <button data-vista="canchas" class="activo">Canchas</button>
+    <button data-vista="mias" class="solo-sesion">Mis reservas</button>
+    <button data-vista="admin" class="solo-admin">Administrar</button>
+  </nav>
+  <div id="sesion">
+    <span id="quien"></span>
+    <button id="btnSalir" class="sec solo-sesion">Salir</button>
+    <button id="btnIngresar" class="sin-sesion">Ingresar</button>
+  </div>
+</header>
+
+<div id="aviso" class="aviso oculto"></div>
+
+<main>
+  <!-- Ingresar / registrarse -->
+  <section id="vista-login" class="vista oculto">
+    <div class="dos">
+      <form id="formLogin" class="tarjeta">
+        <h2>Ingresar</h2>
+        <label>Correo <input name="email" type="email" required value="jugador@reservacancha.co"></label>
+        <label>Contraseña <input name="password" type="password" required value="jugador123"></label>
+        <button>Ingresar</button>
+        <p class="nota">Pruebas: jugador@reservacancha.co / jugador123 · admin@reservacancha.co / admin123</p>
+      </form>
+      <form id="formRegistro" class="tarjeta">
+        <h2>Crear cuenta de jugador</h2>
+        <label>Nombre <input name="nombre" required></label>
+        <label>Correo <input name="email" type="email" required></label>
+        <label>Contraseña (mínimo 8) <input name="password" type="password" required></label>
+        <button>Registrarme</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Canchas y disponibilidad (Proveedor 1 + Proveedor 2) -->
+  <section id="vista-canchas" class="vista">
+    <h2>Canchas del complejo</h2>
+    <div class="filtros">
+      <label>Tipo
+        <select id="filtroTipo"><option value="">Todas</option></select>
+      </label>
+      <label>Fecha <input id="fecha" type="date"></label>
+    </div>
+    <div id="listaCanchas" class="rejilla"></div>
+
+    <div id="panelDisponibilidad" class="tarjeta oculto">
+      <h3 id="tituloDisponibilidad"></h3>
+      <p class="nota">Elige la hora de inicio y la duración. Las horas ocupadas no aparecen.</p>
+      <div id="franjas" class="franjas"></div>
+      <div class="fila">
+        <label>Duración
+          <select id="duracion">
+            <option value="60">1 hora</option>
+            <option value="90">1 h 30</option>
+            <option value="120">2 horas</option>
+          </select>
+        </label>
+        <button id="btnReservar" disabled>Reservar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mis reservas (Proveedor 2) -->
+  <section id="vista-mias" class="vista oculto">
+    <h2>Mis reservas</h2>
+    <table class="tabla">
+      <thead><tr><th>#</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="tablaMias"></tbody>
+    </table>
+  </section>
+
+  <!-- Administración: CRUD de canchas y horarios, todas las reservas -->
+  <section id="vista-admin" class="vista oculto">
+    <h2>Administrar</h2>
+    <div class="dos">
+      <form id="formCancha" class="tarjeta">
+        <h3 id="tituloFormCancha">Nueva cancha</h3>
+        <input type="hidden" name="id">
+        <label>Nombre <input name="nombre" required></label>
+        <label>Tipo <input name="tipo" placeholder="Fútbol 5" required></label>
+        <label>Superficie <input name="superficie" value="Sintética"></label>
+        <label>Precio por hora <input name="precioHora" type="number" min="0" step="1000" required></label>
+        <div class="fila">
+          <button>Guardar</button>
+          <button type="button" id="btnCancelarEdicion" class="sec oculto">Cancelar edición</button>
+        </div>
+      </form>
+      <div class="tarjeta">
+        <h3>Canchas activas</h3>
+        <table class="tabla">
+          <thead><tr><th>#</th><th>Nombre</th><th>Precio</th><th></th></tr></thead>
+          <tbody id="tablaAdminCanchas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3>Horarios</h3>
+      <div class="fila">
+        <label>Cancha <select id="horarioCancha"></select></label>
+      </div>
+      <table class="tabla">
+        <thead><tr><th>#</th><th>Día</th><th>Abre</th><th>Cierra</th><th></th></tr></thead>
+        <tbody id="tablaHorarios"></tbody>
+      </table>
+      <form id="formHorario" class="fila">
+        <label>Día
+          <select name="diaSemana">
+            <option value="MONDAY">Lunes</option><option value="TUESDAY">Martes</option>
+            <option value="WEDNESDAY">Miércoles</option><option value="THURSDAY">Jueves</option>
+            <option value="FRIDAY">Viernes</option><option value="SATURDAY">Sábado</option>
+            <option value="SUNDAY">Domingo</option>
+          </select>
+        </label>
+        <label>Abre <input name="horaApertura" type="time" value="06:00" required></label>
+        <label>Cierra <input name="horaCierre" type="time" value="22:00" required></label>
+        <button>Agregar horario</button>
+      </form>
+    </div>
+
+    <div class="tarjeta">
+      <h3>Todas las reservas</h3>
+      <table class="tabla">
+        <thead><tr><th>#</th><th>Jugador</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tablaAdminReservas"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

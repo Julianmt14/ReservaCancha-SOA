@@ -1,0 +1,26 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: servicio-reservas
+  datasource:
+    # Base de datos propia del Proveedor 2: nadie más lee sus tablas, se usan solo por HTTP.
+    # LOCK_TIMEOUT: si dos transacciones piden el mismo bloque, la segunda espera a que la primera
+    # termine y entonces la restricción UNIQUE la rechaza (en vez de fallar por tiempo de espera).
+    url: ${RESERVAS_DATASOURCE_URL:jdbc:h2:mem:servicioreservas;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000}
+    username: ${RESERVAS_DATASOURCE_USERNAME:sa}
+    password: ${RESERVAS_DATASOURCE_PASSWORD:}
+    driver-class-name: ${RESERVAS_DATASOURCE_DRIVER:org.h2.Driver}
+  sql:
+    init:
+      # DDL (schema.sql) y DML (data.sql) explícitos; Hibernate solo valida que coincidan con las entidades.
+      mode: always
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+app:
+  # Clave que debe mandar la aplicación consumidora (backend de ReservaCancha) en X-Api-Key
+  api-key: ${RESERVAS_API_KEY:clave-dev-portal-reservacancha}

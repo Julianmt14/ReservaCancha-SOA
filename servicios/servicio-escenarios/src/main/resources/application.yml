@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: servicio-escenarios
+  datasource:
+    # Base de datos propia del Proveedor 1: ninguna otra aplicación lee sus tablas, solo comparten canchaId.
+    url: ${ESCENARIOS_DATASOURCE_URL:jdbc:h2:mem:servicioescenarios;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${ESCENARIOS_DATASOURCE_USERNAME:sa}
+    password: ${ESCENARIOS_DATASOURCE_PASSWORD:}
+    driver-class-name: ${ESCENARIOS_DATASOURCE_DRIVER:org.h2.Driver}
+  sql:
+    init:
+      # DDL explícito en schema.sql y semilla en data.sql. Con una base persistente que ya tenga la
+      # semilla se apaga con ESCENARIOS_SQL_INIT=never.
+      mode: ${ESCENARIOS_SQL_INIT:always}
+      encoding: UTF-8
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Hibernate no crea tablas: solo comprueba que las entidades coincidan con schema.sql.
+      ddl-auto: validate
+
+app:
+  jwt:
+    # Mismo secreto (Base64, HS256) con el que la consumidora firma sus tokens; aquí solo se validan.
+    secret: ${JWT_SECRET:cGFyYS1kZXYtbXV5LXNlY3JldG8tbXV5LWxhcmdvLXJlc2VydmFjYW5jaGEtY29sb21iaWE=}
+  # Zona horaria de las canchas: con ella se decide si una franja ya pasó.
+  zona-horaria: ${ZONA_HORARIA:America/Bogota}

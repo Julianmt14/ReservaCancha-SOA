@@ -1,0 +1,101 @@
+/* Estilos de la interfaz web de ReservaCancha (identidad verde) */
+:root {
+  --botella: #0b4a40;
+  --botella-hover: #0d5a4e;
+  --menta: #6fd3a8;
+  --fondo: #f3f6f4;
+  --tarjeta: #ffffff;
+  --linea: #dde7e3;
+  --texto: #10201c;
+  --texto-2: #4d635d;
+  --ok: #1f8a5b;
+  --ok-suave: #e3f6ee;
+  --alerta: #946a00;
+  --alerta-suave: #fff4d6;
+  --error: #b3261e;
+  --error-suave: #fdecea;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--texto);
+  background: var(--fondo);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: var(--botella);
+  color: #fff;
+}
+.marca { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.marca b { color: var(--menta); }
+#menu { display: flex; gap: 6px; flex: 1; }
+#menu button { background: transparent; border: 1px solid transparent; color: #cfe5de; }
+#menu button.activo { border-color: var(--menta); color: #fff; }
+#sesion { display: flex; align-items: center; gap: 8px; }
+#quien { font-size: 14px; color: #cfe5de; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+h2 { color: var(--botella); margin: 6px 0 14px; }
+h3 { margin: 0 0 10px; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--botella);
+  color: #fff;
+  cursor: pointer;
+}
+button:hover { background: var(--botella-hover); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.sec { background: #fff; color: var(--botella); border: 1px solid var(--linea); }
+button.peligro { background: var(--error); }
+button.mini { padding: 4px 10px; font-size: 13px; }
+
+label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--texto-2); margin-bottom: 10px; }
+input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 8px; background: #fff; color: var(--texto); }
+
+.tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fila { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.filtros { display: flex; gap: 12px; flex-wrap: wrap; }
+.nota { font-size: 13px; color: var(--texto-2); }
+
+.rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.cancha { background: #fff; border: 1px solid var(--linea); border-radius: 12px; padding: 14px; cursor: pointer; }
+.cancha:hover, .cancha.elegida { border-color: var(--botella); box-shadow: 0 0 0 2px var(--menta); }
+.cancha .precio { font-size: 20px; font-weight: 800; color: var(--botella); }
+.cancha .detalle { font-size: 13px; color: var(--texto-2); }
+
+.franjas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.franjas button { background: var(--ok-suave); color: var(--ok); }
+.franjas button.elegida { background: var(--ok); color: #fff; }
+
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla th { text-align: left; color: var(--texto-2); font-weight: 600; border-bottom: 2px solid var(--linea); padding: 6px; }
+.tabla td { border-bottom: 1px solid var(--linea); padding: 6px; }
+
+.estado { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+.estado.PENDIENTE, .estado.CONFIRMADA { background: var(--ok-suave); color: var(--ok); }
+.estado.CANCELADA { background: var(--error-suave); color: var(--error); }
+
+.aviso { max-width: 1100px; margin: 12px auto 0; padding: 10px 14px; border-radius: 8px; }
+.aviso.ok { background: var(--ok-suave); color: var(--ok); }
+.aviso.error { background: var(--error-suave); color: var(--error); }
+
+.oculto { display: none !important; }
+
+@media (max-width: 720px) {
+  .dos { grid-template-columns: 1fr; }
+  .tabla { font-size: 13px; }
+}

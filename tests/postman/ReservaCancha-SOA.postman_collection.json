@@ -1,0 +1,2642 @@
+{
+  "info": {
+    "name": "ReservaCancha SOA - dos proveedores y consumidora",
+    "description": "Desarrollo Orientado a Servicios · USTA Villavicencio · 2026-2 · Julián Mejía y Samuel Báez.\n\nProveedor 1 · servicio-escenarios (:8081), Proveedor 2 · servicio-reservas (:8082) y Consumidora · backend de ReservaCancha Web (:8080).\nCorrer las carpetas 0 a 3 en orden con todo encendido; la 4 es manual (apagar un proveedor). Ver tests/postman/README.md.\n\nLa variable `fecha` se calcula sola antes de cada petición: hoy + 5 días (así las reservas siempre son futuras y se pueden cancelar con más de 3 h de anticipación).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// fecha futura = hoy + 5 días (fecha local, YYYY-MM-DD)",
+          "const d = new Date();",
+          "d.setDate(d.getDate() + 5);",
+          "const dos = n => String(n).padStart(2, '0');",
+          "pm.environment.set('fecha', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0 · Salud",
+      "description": "Comprueba que los dos proveedores están encendidos. `GET /api/ping` es público en los dos y responde `{servicio, estado: \"ok\"}`.",
+      "item": [
+        {
+          "name": "Ping Proveedor 1 · servicio-escenarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('estado ok', () => pm.expect(j.estado).to.eql('ok'));",
+                  "pm.test('responde servicio-escenarios', () => pm.expect(j.servicio).to.include('escenarios'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/ping",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "ping"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ping Proveedor 2 · servicio-reservas (sin clave)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 sin X-Api-Key', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('estado ok', () => pm.expect(j.estado).to.eql('ok'));",
+                  "pm.test('responde servicio-reservas', () => pm.expect(j.servicio).to.include('reservas'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservas}}/api/ping",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "ping"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 · Proveedor 1 (escenarios)",
+      "description": "Pruebas directas a servicio-escenarios (:8081), fuente de verdad de canchas, horarios y reglas. Los GET son públicos; las escrituras exigen el JWT que emite la consumidora.",
+      "item": [
+        {
+          "name": "Listar canchas activas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('es una lista con las seis canchas semilla', () => { pm.expect(j).to.be.an('array'); pm.expect(j.length).to.be.at.least(6); });",
+                  "pm.test('solo canchas activas', () => j.forEach(c => pm.expect(c.activa).to.eql(true)));",
+                  "pm.test('forma CanchaDto', () => pm.expect(j[0]).to.include.keys('id','establecimientoId','nombre','deporte','tipo','superficie','ubicacion','precioHora','activa','reglas'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Una cancha (1 · Sintética F5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('cancha 1 de fútbol 5', () => { pm.expect(c.id).to.eql(1); pm.expect(c.tipo).to.eql('Fútbol 5'); pm.expect(c.deporte).to.eql('FUTBOL'); });",
+                  "pm.test('precio por hora 60000', () => pm.expect(Number(c.precioHora)).to.eql(60000));",
+                  "pm.test('reglas 60 min / 3 h / 50 %', () => pm.expect(c.reglas).to.eql({ duracionMinimaMin: 60, horasCancelacion: 3, porcentajeAbono: 50 }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancha inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test('mensaje «Cancha no existe»', () => pm.expect(j.error).to.include('Cancha no existe'));",
+                  "pm.test('formato de error {status, error, ts}', () => { pm.expect(j.status).to.eql(404); pm.expect(j).to.have.property('ts'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/999999",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Horarios de la cancha 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('los 7 días de la semana', () => pm.expect(j.map(h => h.diaSemana)).to.include.members(['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']));",
+                  "pm.test('de 06:00 a 22:00 y activos', () => j.forEach(h => { pm.expect(h.horaApertura).to.eql('06:00:00'); pm.expect(h.horaCierre).to.eql('22:00:00'); pm.expect(h.activo).to.eql(true); pm.expect(h.canchaId).to.eql(1); }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1/horarios",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1",
+                "horarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Franjas de 1 h de la cancha 1 en {{fecha}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('cancha abierta ese día', () => { pm.expect(j.canchaId).to.eql(1); pm.expect(j.fecha).to.eql(pm.environment.get('fecha')); pm.expect(j.abierta).to.eql(true); });",
+                  "pm.test('16 franjas de 06:00 a 22:00', () => { pm.expect(j.franjas).to.have.lengthOf(16); pm.expect(j.franjas[0]).to.eql({ inicio: '06:00', fin: '07:00' }); pm.expect(j.franjas[15]).to.eql({ inicio: '21:00', fin: '22:00' }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1/franjas?fecha={{fecha}}",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1",
+                "franjas"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cotización válida (21:00–22:00)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('60 minutos', () => pm.expect(j.minutos).to.eql(60));",
+                  "pm.test('valor total 60000 y abono 50 % = 30000', () => { pm.expect(Number(j.valorTotal)).to.eql(60000); pm.expect(Number(j.valorAbono)).to.eql(30000); });",
+                  "pm.test('informa la regla de cancelación (3 h)', () => pm.expect(j.horasCancelacion).to.eql(3));",
+                  "pm.test('horas en formato HH:mm:ss', () => { pm.expect(j.horaInicio).to.eql('21:00:00'); pm.expect(j.horaFin).to.eql('22:00:00'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=21:00&horaFin=22:00",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1",
+                "cotizacion"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                },
+                {
+                  "key": "horaInicio",
+                  "value": "21:00"
+                },
+                {
+                  "key": "horaFin",
+                  "value": "22:00"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cotización fuera de horario (22:00–23:00) → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('mensaje «Fuera del horario de operación de la cancha»', () => pm.expect(pm.response.json().error).to.include('Fuera del horario de operación'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=22:00&horaFin=23:00",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1",
+                "cotizacion"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                },
+                {
+                  "key": "horaInicio",
+                  "value": "22:00"
+                },
+                {
+                  "key": "horaFin",
+                  "value": "23:00"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cotización de 30 min (menor a la mínima) → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('mensaje «La reserva mínima es de 60 minutos»', () => pm.expect(pm.response.json().error).to.include('mínima es de 60 minutos'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=10:00&horaFin=10:30",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "1",
+                "cotizacion"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                },
+                {
+                  "key": "horaInicio",
+                  "value": "10:00"
+                },
+                {
+                  "key": "horaFin",
+                  "value": "10:30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear cancha sin token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 sin Authorization', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha sin permiso\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 50000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Proveedor 2 (reservas)",
+      "description": "Pruebas directas a servicio-reservas (:8082), fuente de verdad de los horarios ocupados. Todo menos `/api/ping` exige `X-Api-Key`. Usa la cancha 1 de 08:00 a 09:00 en {{fecha}} y la deja libre al final.",
+      "item": [
+        {
+          "name": "Listar reservas sin X-Api-Key → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 sin clave de aplicación', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clave errada → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 con clave errada', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "clave-equivocada"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear reserva directa 08:00–09:00 → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.test('queda PENDIENTE', () => pm.expect(r.estado).to.eql('PENDIENTE'));",
+                  "pm.test('forma ReservaDto', () => { pm.expect(r).to.include.keys('id','usuarioId','canchaId','fecha','horaInicio','horaFin','valorTotal','estado','creadoEn'); pm.expect(r.canchaId).to.eql(1); pm.expect(r.horaInicio).to.eql('08:00:00'); pm.expect(r.horaFin).to.eql('09:00:00'); });",
+                  "pm.environment.set('reservaDirectaId', r.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"09:00\",\n  \"valorTotal\": 60000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Misma hora otra vez → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('mensaje «Conflicto de horario»', () => pm.expect(pm.response.json().error).to.include('Conflicto de horario'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"09:00\",\n  \"valorTotal\": 60000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Traslape parcial 08:30–09:30 → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409: comparte el bloque de 08:30', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"08:30\",\n  \"horaFin\": \"09:30\",\n  \"valorTotal\": 60000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Horas que no son en punto ni y media → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"10:15\",\n  \"horaFin\": \"11:15\",\n  \"valorTotal\": 60000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar la reserva por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('es la reserva creada', () => pm.expect(pm.response.json().id).to.eql(Number(pm.environment.get('reservaDirectaId'))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaDirectaId}}",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaDirectaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ocupación de la cancha 1 en {{fecha}} (incluye 08:00–09:00)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const id = Number(pm.environment.get('reservaDirectaId'));",
+                  "const o = pm.response.json().find(x => x.reservaId === id);",
+                  "pm.test('la reserva aparece ocupando 08:00–09:00', () => { pm.expect(o, 'bloque ocupado').to.exist; pm.expect(o.inicio).to.eql('08:00'); pm.expect(o.fin).to.eql('09:00'); pm.expect(o.estado).to.eql('PENDIENTE'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/ocupacion?canchaId=1&fecha={{fecha}}",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "ocupacion"
+              ],
+              "query": [
+                {
+                  "key": "canchaId",
+                  "value": "1"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancelar (PATCH estado CANCELADA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('estado CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaDirectaId}}/estado",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaDirectaId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CANCELADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Ocupación tras cancelar: la hora quedó libre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const id = Number(pm.environment.get('reservaDirectaId'));",
+                  "pm.test('la reserva cancelada ya no ocupa la cancha', () => pm.expect(pm.response.json().some(x => x.reservaId === id)).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/ocupacion?canchaId=1&fecha={{fecha}}",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "ocupacion"
+              ],
+              "query": [
+                {
+                  "key": "canchaId",
+                  "value": "1"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancelar otra vez → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('mensaje «La reserva ya está cancelada»', () => pm.expect(pm.response.json().error).to.include('ya está cancelada'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaDirectaId}}/estado",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaDirectaId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CANCELADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "La hora liberada se puede reservar de nuevo → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201: los bloques se borraron al cancelar', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.environment.set('reservaDirecta2Id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 1,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"09:00\",\n  \"valorTotal\": 60000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Limpieza: cancelar la segunda reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 CANCELADA', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().estado).to.eql('CANCELADA'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaDirecta2Id}}/estado",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaDirecta2Id}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CANCELADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Consumidora",
+      "description": "Pruebas a la consumidora (backend :8080), que integra los dos proveedores con RestClient. El frontend usa exactamente estas rutas. Usa la cancha 2 de 19:00 a 20:00 en {{fecha}} y la cancela al final.",
+      "item": [
+        {
+          "name": "Login administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('rol ADMIN y token', () => { pm.expect(j.rol).to.eql('ADMIN'); pm.expect(j.token).to.be.a('string').and.not.empty; });",
+                  "pm.environment.set('tokenAdmin', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@reservacancha.co\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registrar jugador semilla (200 o 409 si ya existe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 (creado) o 409 (ya existía)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 409]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/register",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Solo por robustez: si la semilla ya trae a jugador@reservacancha.co responde 409 y no pasa nada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Jugador de prueba\",\n  \"email\": \"jugador@reservacancha.co\",\n  \"password\": \"jugador123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login jugador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('rol JUGADOR y token', () => { pm.expect(j.rol).to.eql('JUGADOR'); pm.expect(j.token).to.be.a('string').and.not.empty; });",
+                  "pm.environment.set('tokenJugador', j.token);",
+                  "pm.environment.set('jugadorId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jugador@reservacancha.co\",\n  \"password\": \"jugador123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Canchas (vienen del Proveedor 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('al menos las seis canchas semilla', () => pm.expect(j.length).to.be.at.least(6));",
+                  "pm.test('forma que espera el frontend', () => pm.expect(j[0]).to.include.keys('id','nombre','tipo','superficie','ubicacion','precioHora','activa'));",
+                  "pm.test('incluye la cancha 2 de fútbol 8', () => pm.expect(j.some(c => c.id === 2 && c.tipo === 'Fútbol 8')).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Disponibilidad cancha 2 en {{fecha}} (P1 franjas − P2 ocupación)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('forma {canchaId, fecha, ocupadas, libres}', () => { pm.expect(Number(j.canchaId)).to.eql(2); pm.expect(j.fecha).to.eql(pm.environment.get('fecha')); pm.expect(j.ocupadas).to.be.an('array'); pm.expect(j.libres).to.be.an('array'); });",
+                  "pm.test('19:00–20:00 está libre antes de reservar', () => pm.expect(j.libres.some(f => String(f.inicio).startsWith('19:00'))).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{consumidora}}/api/disponibilidad?canchaId=2&fecha={{fecha}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "disponibilidad"
+              ],
+              "query": [
+                {
+                  "key": "canchaId",
+                  "value": "2"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear reserva con JWT de jugador (19:00–20:00)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const r = pm.response.json();",
+                  "pm.test('PENDIENTE y valor cotizado por el Proveedor 1 (90000)', () => { pm.expect(r.estado).to.eql('PENDIENTE'); pm.expect(Number(r.valorTotal)).to.eql(90000); });",
+                  "pm.test('forma Reserva del frontend (usuario y cancha anidados)', () => { pm.expect(r.cancha.id).to.eql(2); pm.expect(r.usuario.email).to.eql('jugador@reservacancha.co'); pm.expect(r.horaInicio).to.match(/^19:00/); });",
+                  "pm.test('sin hash de contraseña en la respuesta', () => pm.expect(pm.response.text()).to.not.include('password'));",
+                  "pm.environment.set('reservaId', r.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenJugador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 2,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"19:00\",\n  \"horaFin\": \"20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "La misma reserva otra vez → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 propagado desde el Proveedor 2', () => pm.response.to.have.status(409));",
+                  "pm.test('mensaje «Conflicto de horario»', () => pm.expect(pm.response.json().error).to.include('Conflicto de horario'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenJugador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 2,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"19:00\",\n  \"horaFin\": \"20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Disponibilidad tras reservar: 19:00 ocupada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('19:00 aparece en ocupadas y no en libres', () => { pm.expect(j.ocupadas.some(f => String(f.inicio).startsWith('19:00'))).to.eql(true); pm.expect(j.libres.some(f => String(f.inicio).startsWith('19:00'))).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{consumidora}}/api/disponibilidad?canchaId=2&fecha={{fecha}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "disponibilidad"
+              ],
+              "query": [
+                {
+                  "key": "canchaId",
+                  "value": "2"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mis reservas (jugador)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const id = Number(pm.environment.get('reservaId'));",
+                  "pm.test('incluye la reserva creada', () => pm.expect(j.some(r => r.id === id)).to.eql(true));",
+                  "pm.test('todas son del jugador', () => j.forEach(r => pm.expect(r.usuario.email).to.eql('jugador@reservacancha.co')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenJugador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas/mias",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear reserva sin token → 401/403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401/403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": 2,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"19:00\",\n  \"horaFin\": \"20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Mis reservas con token inválido → 401/403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401/403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiJ9.e30.firma-falsa"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas/mias",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "mias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear cancha con token de jugador → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403: el jugador no administra canchas', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenJugador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha Postman {{$timestamp}}\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 55000,\n  \"activa\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear cancha con token admin (JWT reenviado al Proveedor 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const c = pm.response.json();",
+                  "pm.test('cancha creada y activa', () => { pm.expect(c.id).to.be.a('number'); pm.expect(c.nombre).to.include('Cancha Postman'); pm.expect(c.activa).to.eql(true); });",
+                  "pm.environment.set('canchaNuevaId', c.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha Postman {{$timestamp}}\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 55000,\n  \"activa\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "La cancha nueva quedó en el Proveedor 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 directo en servicio-escenarios', () => pm.response.to.have.status(200));",
+                  "pm.test('con las reglas por defecto 60/3/50', () => pm.expect(pm.response.json().reglas).to.eql({ duracionMinimaMin: 60, horasCancelacion: 3, porcentajeAbono: 50 }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/{{canchaNuevaId}}",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "{{canchaNuevaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Limpieza: dar de baja la cancha nueva (activa=false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('activa=false', () => pm.expect(pm.response.json().activa).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas/{{canchaNuevaId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "{{canchaNuevaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha Postman (baja)\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 55000,\n  \"activa\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancelar la reserva (jugador, más de 3 h antes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('estado CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenJugador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/reservas/{{reservaId}}/cancelar",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaId}}",
+                "cancelar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Disponibilidad tras cancelar: 19:00 libre otra vez",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('19:00 vuelve a libres', () => pm.expect(pm.response.json().libres.some(f => String(f.inicio).startsWith('19:00'))).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{consumidora}}/api/disponibilidad?canchaId=2&fecha={{fecha}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "disponibilidad"
+              ],
+              "query": [
+                {
+                  "key": "canchaId",
+                  "value": "2"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 · Proveedor detenido (manual)",
+      "description": "Prueba de independencia. **No se corre con todo encendido**: cada subcarpeta exige apagar un proveedor antes.\n\n**4a · servicio-escenarios apagado.** Detener solo servicio-escenarios (Ctrl+C en su terminal, :8081) y dejar encendidos la consumidora y servicio-reservas. Antes correr «3 · Consumidora» (o al menos sus dos logins) para tener `tokenJugador`. Al intentar crear una reserva, la consumidora no puede cotizar con el Proveedor 1 y responde **503** «No se pudo verificar la cancha: el servicio de escenarios no responde. La reserva no se creó.». La consulta directa a servicio-reservas confirma que no quedó ningún bloque ocupado: no hay reserva a medias.\n\n**4b · servicio-reservas apagado.** Encender de nuevo servicio-escenarios y detener solo servicio-reservas (:8082). La lista de canchas sigue funcionando (200, viene del Proveedor 1), pero la disponibilidad y «mis reservas» responden **503** porque necesitan la ocupación del Proveedor 2. La aplicación explica el error en vez de caerse.\n\nComandos: `npx newman run tests/postman/ReservaCancha-SOA.postman_collection.json -e tests/postman/local.postman_environment.json --folder \"4a · servicio-escenarios apagado\"` (y lo mismo con `4b`).",
+      "item": [
+        {
+          "name": "4a · servicio-escenarios apagado",
+          "description": "Requiere servicio-escenarios (:8081) detenido; consumidora (:8080) y servicio-reservas (:8082) encendidos.",
+          "item": [
+            {
+              "name": "Login jugador",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200: el login no depende de los proveedores', () => pm.response.to.have.status(200));",
+                      "pm.environment.set('tokenJugador', pm.response.json().token);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{consumidora}}/api/auth/login",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"jugador@reservacancha.co\",\n  \"password\": \"jugador123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Crear reserva con P1 apagado → 503",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('503', () => pm.response.to.have.status(503));",
+                      "pm.test('mensaje del contrato', () => pm.expect(pm.response.json().error).to.include('No se pudo verificar la cancha: el servicio de escenarios no responde. La reserva no se creó.'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{tokenJugador}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{consumidora}}/api/reservas",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservas"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"canchaId\": 2,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"15:00\",\n  \"horaFin\": \"16:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "La reserva no se creó (ocupación directa en P2)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 (servicio-reservas sigue encendido)', () => pm.response.to.have.status(200));",
+                      "pm.test('no hay bloque 15:00–16:00', () => pm.expect(pm.response.json().some(o => o.inicio === '15:00')).to.eql(false));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Api-Key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{reservas}}/api/reservas/ocupacion?canchaId=2&fecha={{fecha}}",
+                  "host": [
+                    "{{reservas}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservas",
+                    "ocupacion"
+                  ],
+                  "query": [
+                    {
+                      "key": "canchaId",
+                      "value": "2"
+                    },
+                    {
+                      "key": "fecha",
+                      "value": "{{fecha}}"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "4b · servicio-reservas apagado",
+          "description": "Requiere servicio-reservas (:8082) detenido; consumidora (:8080) y servicio-escenarios (:8081) encendidos.",
+          "item": [
+            {
+              "name": "Login jugador",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200', () => pm.response.to.have.status(200));",
+                      "pm.environment.set('tokenJugador', pm.response.json().token);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{consumidora}}/api/auth/login",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"jugador@reservacancha.co\",\n  \"password\": \"jugador123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Canchas siguen respondiendo (P1 encendido)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200', () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{consumidora}}/api/canchas",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "canchas"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Disponibilidad con P2 apagado → 503",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('503', () => pm.response.to.have.status(503));",
+                      "pm.test('explica que el servicio de reservas no responde', () => pm.expect(pm.response.json().error).to.include('no responde'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{consumidora}}/api/disponibilidad?canchaId=2&fecha={{fecha}}",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "disponibilidad"
+                  ],
+                  "query": [
+                    {
+                      "key": "canchaId",
+                      "value": "2"
+                    },
+                    {
+                      "key": "fecha",
+                      "value": "{{fecha}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Mis reservas con P2 apagado → 503",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('503', () => pm.response.to.have.status(503));",
+                      "pm.test('explica que el servicio de reservas no responde', () => pm.expect(pm.response.json().error).to.include('no responde'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{tokenJugador}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{consumidora}}/api/reservas/mias",
+                  "host": [
+                    "{{consumidora}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservas",
+                    "mias"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · CRUD: eliminar y baja lógica",
+      "description": "Cierra el CRUD: DELETE de horario, baja lógica de cancha (activa=false) y cancelación lógica de reserva (PATCH estado).",
+      "item": [
+        {
+          "name": "Login administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tokenAdmin', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@reservacancha.co\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear cancha (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const c = pm.response.json();",
+                  "pm.test('activa', () => pm.expect(c.activa).to.eql(true));",
+                  "pm.environment.set('canchaCrudId', c.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha CRUD {{$timestamp}}\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 50000,\n  \"activa\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear horario del lunes (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const h = pm.response.json();",
+                  "pm.test('horario de la cancha nueva', () => { pm.expect(h.cancha.id).to.eql(pm.environment.get('canchaCrudId')); pm.expect(h.diaSemana).to.eql('MONDAY'); });",
+                  "pm.environment.set('horarioCrudId', h.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": \"{{canchaCrudId}}\",\n  \"diaSemana\": \"MONDAY\",\n  \"horaApertura\": \"08:00\",\n  \"horaCierre\": \"20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Editar el horario (PUT) 08:00–22:00",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('cierra 22:00', () => pm.expect(pm.response.json().horaCierre).to.include('22:00'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios/{{horarioCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "{{horarioCrudId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canchaId\": \"{{canchaCrudId}}\",\n  \"diaSemana\": \"MONDAY\",\n  \"horaApertura\": \"08:00\",\n  \"horaCierre\": \"22:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Horarios de la cancha: 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('un horario', () => pm.expect(pm.response.json().length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios/cancha/{{canchaCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "cancha",
+                "{{canchaCrudId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar horario sin token → 401/403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401/403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios/{{horarioCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "{{horarioCrudId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar horario (DELETE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/204', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios/{{horarioCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "{{horarioCrudId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Horarios tras eliminar: 0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('ya no aparece', () => pm.expect(pm.response.json().length).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/horarios/cancha/{{canchaCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "horarios",
+                "cancha",
+                "{{canchaCrudId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dar de baja la cancha (PUT activa=false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('inactiva', () => pm.expect(pm.response.json().activa).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas/{{canchaCrudId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "{{canchaCrudId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cancha CRUD (baja)\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 50000,\n  \"activa\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "La cancha ya no se lista",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const id = pm.environment.get('canchaCrudId');",
+                  "pm.test('no está en la lista', () => pm.expect(pm.response.json().map(c => c.id)).to.not.include(id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pero se conserva en el Proveedor 1 (baja lógica)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('activa=false', () => pm.expect(pm.response.json().activa).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{escenarios}}/api/canchas/{{canchaCrudId}}",
+              "host": [
+                "{{escenarios}}"
+              ],
+              "path": [
+                "api",
+                "canchas",
+                "{{canchaCrudId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reserva directa en P2: cancha 3, 10:00–11:00",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('reservaCrudId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"canchaId\": 3,\n  \"fecha\": \"{{fecha}}\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"11:00\",\n  \"valorTotal\": 75000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancelar la reserva (PATCH estado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaCrudId}}/estado",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaCrudId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CANCELADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "La reserva se conserva como historial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('sigue existiendo, CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{reservas}}/api/reservas/{{reservaCrudId}}",
+              "host": [
+                "{{reservas}}"
+              ],
+              "path": [
+                "api",
+                "reservas",
+                "{{reservaCrudId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

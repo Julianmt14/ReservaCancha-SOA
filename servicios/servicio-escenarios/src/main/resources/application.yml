@@ -6,14 +6,14 @@ spring:
     name: servicio-escenarios
   datasource:
     # Base de datos propia del Proveedor 1: ninguna otra aplicación lee sus tablas, solo comparten canchaId.
-    url: ${ESCENARIOS_DATASOURCE_URL:jdbc:h2:mem:servicioescenarios;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    # Se guarda en archivo (carpeta datos/) para que canchas y horarios se conserven al reiniciar.
+    url: ${ESCENARIOS_DATASOURCE_URL:jdbc:h2:file:./datos/servicioescenarios}
     username: ${ESCENARIOS_DATASOURCE_USERNAME:sa}
     password: ${ESCENARIOS_DATASOURCE_PASSWORD:}
     driver-class-name: ${ESCENARIOS_DATASOURCE_DRIVER:org.h2.Driver}
   sql:
     init:
-      # DDL explícito en schema.sql y semilla en data.sql. Con una base persistente que ya tenga la
-      # semilla se apaga con ESCENARIOS_SQL_INIT=never.
+      # DDL explícito en schema.sql y semilla en data.sql; los dos se pueden repetir sin duplicar datos.
       mode: ${ESCENARIOS_SQL_INIT:always}
       encoding: UTF-8
   jpa:

@@ -54,4 +54,4 @@ Total: 62 peticiones y 125 pruebas (55 peticiones y 114 pruebas en la corrida au
 2. Detener **solo** servicio-escenarios (Ctrl+C en su terminal) y correr
    `--folder "4a · servicio-escenarios apagado"`.
 3. Encenderlo de nuevo, detener **solo** servicio-reservas y correr `--folder "4b · servicio-reservas apagado"`.
-4. Encender servicio-reservas otra vez. Como su base es H2 en memoria, al reiniciarlo arranca vacío.
+4. Encender servicio-reservas otra vez. Su base está en archivo (`datos/`), así que conserva las reservas.

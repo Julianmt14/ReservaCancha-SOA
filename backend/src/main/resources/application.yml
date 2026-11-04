@@ -29,6 +29,15 @@ app:
   jwt:
     secret: ${JWT_SECRET:cGFyYS1kZXYtbXV5LXNlY3JldG8tbXV5LWxhcmdvLXJlc2VydmFjYW5jaGEtY29sb21iaWE=}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  # Proveedor 1: canchas, horarios y reglas (servicios/servicio-escenarios, puerto 8081).
+  servicio-escenarios:
+    url: ${SERVICIO_ESCENARIOS_URL:http://localhost:8081}
+    timeout-ms: ${SERVICIO_ESCENARIOS_TIMEOUT_MS:5000}
+  # Proveedor 2: reservas y horarios ocupados (servicios/servicio-reservas, puerto 8082).
+  servicio-reservas:
+    url: ${SERVICIO_RESERVAS_URL:http://localhost:8082}
+    api-key: ${RESERVAS_API_KEY:clave-dev-portal-reservacancha}
+    timeout-ms: ${SERVICIO_RESERVAS_TIMEOUT_MS:5000}
   # Los pagos son de servicio-pagos (servicios/servicio-pagos, puerto 8085); aquí solo se le llama.
   servicio-pagos:
     url: ${SERVICIO_PAGOS_URL:http://localhost:8085}

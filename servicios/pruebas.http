@@ -1,7 +1,180 @@
-### Pruebas directas a servicio-pagos (cliente HTTP de IntelliJ)
-### Antes: cd servicios/servicio-pagos && mvn spring-boot:run
+### Pruebas directas a los servicios (cliente HTTP de IntelliJ)
+### Antes, cada uno en su terminal:
+###   cd servicios/servicio-escenarios && mvn spring-boot:run   (8081, Proveedor 1)
+###   cd servicios/servicio-reservas   && mvn spring-boot:run   (8082, Proveedor 2)
+###   cd backend                       && mvn spring-boot:run   (8080, consumidora: solo para sacar el JWT)
+###   cd servicios/servicio-pagos      && mvn spring-boot:run   (8085, opcional)
+### La colección Postman con pruebas automáticas está en tests/postman/.
+@consumidora = http://localhost:8080
+@escenarios = http://localhost:8081
+@reservas = http://localhost:8082
 @pagos = http://localhost:8085
 @clave = clave-dev-portal-reservacancha
+# Una fecha futura (las reservas en el pasado se rechazan)
+@fecha = 2026-12-15
+
+
+############################################################################
+### PROVEEDOR 1 · servicio-escenarios (8081)
+############################################################################
+
+### ¿Está encendido? (público)
+GET {{escenarios}}/api/ping
+
+### Establecimientos activos
+GET {{escenarios}}/api/establecimientos
+
+### Canchas activas (filtro opcional por deporte)
+GET {{escenarios}}/api/canchas?deporte=FUTBOL
+
+### Una cancha, con sus reglas (60 min / 3 h / 50 %)
+GET {{escenarios}}/api/canchas/1
+
+### Cancha inexistente: 404 «Cancha no existe»
+GET {{escenarios}}/api/canchas/999999
+
+### Horarios de la cancha 1 (06:00–22:00, los 7 días)
+GET {{escenarios}}/api/canchas/1/horarios
+
+### Franjas de 1 h de ese día (sin ocupación: eso es del Proveedor 2)
+GET {{escenarios}}/api/canchas/1/franjas?fecha={{fecha}}
+
+### Cotización válida: 200, valorTotal 60000 y valorAbono 30000
+GET {{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=21:00&horaFin=22:00
+
+### Cotización fuera de horario: 400 «Fuera del horario de operación de la cancha»
+GET {{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=22:00&horaFin=23:00
+
+### Cotización de 30 minutos: 400 «La reserva mínima es de 60 minutos»
+GET {{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=10:00&horaFin=10:30
+
+### Hora que no es en punto ni y media: 400
+GET {{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=10:15&horaFin=11:15
+
+### Crear cancha sin token: 401
+POST {{escenarios}}/api/canchas
+Content-Type: application/json
+
+{"nombre": "Cancha sin permiso", "tipo": "Fútbol 5", "superficie": "Sintética", "ubicacion": "Villavicencio", "precioHora": 50000}
+
+### El JWT lo emite la consumidora: login de administrador (guarda tokenAdmin)
+POST {{consumidora}}/api/auth/login
+Content-Type: application/json
+
+{"email": "admin@reservacancha.co", "password": "admin123"}
+
+> {% client.global.set("tokenAdmin", response.body.token); %}
+
+### Login de jugador (guarda tokenJugador)
+POST {{consumidora}}/api/auth/login
+Content-Type: application/json
+
+{"email": "jugador@reservacancha.co", "password": "jugador123"}
+
+> {% client.global.set("tokenJugador", response.body.token); %}
+
+### Crear cancha con JWT de jugador: 403
+POST {{escenarios}}/api/canchas
+Authorization: Bearer {{tokenJugador}}
+Content-Type: application/json
+
+{"nombre": "Cancha del jugador", "tipo": "Fútbol 5", "superficie": "Sintética", "ubicacion": "Villavicencio", "precioHora": 50000}
+
+### Crear cancha con JWT de administrador: 201 (reglas por defecto 60/3/50)
+POST {{escenarios}}/api/canchas
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"nombre": "Cancha 3 — Prueba", "tipo": "Fútbol 5", "superficie": "Sintética", "ubicacion": "Villavicencio", "precioHora": 55000}
+
+> {% client.global.set("canchaNuevaId", response.body.id); %}
+
+### Dar de baja la cancha nueva (baja lógica: activa=false)
+PUT {{escenarios}}/api/canchas/{{canchaNuevaId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"nombre": "Cancha 3 — Prueba", "tipo": "Fútbol 5", "superficie": "Sintética", "ubicacion": "Villavicencio", "precioHora": 55000, "activa": false}
+
+### Horario con cierre antes de la apertura: 400
+POST {{escenarios}}/api/horarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"canchaId": 1, "diaSemana": "MONDAY", "horaApertura": "22:00", "horaCierre": "06:00"}
+
+
+############################################################################
+### PROVEEDOR 2 · servicio-reservas (8082)
+############################################################################
+
+### ¿Está encendido? (no pide clave)
+GET {{reservas}}/api/ping
+
+### Sin clave: 401
+GET {{reservas}}/api/reservas
+
+### Crear reserva (como lo hace la consumidora, con el valor ya cotizado): 201 PENDIENTE
+POST {{reservas}}/api/reservas
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"usuarioId": 1, "canchaId": 1, "fecha": "{{fecha}}", "horaInicio": "08:00", "horaFin": "09:00", "valorTotal": 60000}
+
+> {% client.global.set("reservaId", response.body.id); %}
+
+### La misma hora otra vez: 409 «Conflicto de horario» (UNIQUE de bloques_reservados)
+POST {{reservas}}/api/reservas
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"usuarioId": 2, "canchaId": 1, "fecha": "{{fecha}}", "horaInicio": "08:00", "horaFin": "09:00", "valorTotal": 60000}
+
+### Traslape parcial (comparte el bloque de 08:30): 409
+POST {{reservas}}/api/reservas
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"usuarioId": 2, "canchaId": 1, "fecha": "{{fecha}}", "horaInicio": "08:30", "horaFin": "09:30", "valorTotal": 60000}
+
+### Una reserva por id
+GET {{reservas}}/api/reservas/{{reservaId}}
+X-Api-Key: {{clave}}
+
+### Reservas de un usuario
+GET {{reservas}}/api/reservas?usuarioId=1
+X-Api-Key: {{clave}}
+
+### Reservas de una cancha desde una fecha
+GET {{reservas}}/api/reservas?canchaId=1&desde={{fecha}}
+X-Api-Key: {{clave}}
+
+### Ocupación de la cancha ese día (sin canceladas)
+GET {{reservas}}/api/reservas/ocupacion?canchaId=1&fecha={{fecha}}
+X-Api-Key: {{clave}}
+
+### Cancelar: 200 CANCELADA y se borran los bloques
+PATCH {{reservas}}/api/reservas/{{reservaId}}/estado
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"estado": "CANCELADA"}
+
+### La ocupación ya no la muestra
+GET {{reservas}}/api/reservas/ocupacion?canchaId=1&fecha={{fecha}}
+X-Api-Key: {{clave}}
+
+### Cancelar otra vez: 409 «La reserva ya está cancelada»
+PATCH {{reservas}}/api/reservas/{{reservaId}}/estado
+X-Api-Key: {{clave}}
+Content-Type: application/json
+
+{"estado": "CANCELADA"}
+
+
+############################################################################
+### servicio-pagos (8085, opcional)
+############################################################################
 
 ### ¿Está encendido? (no pide clave)
 GET {{pagos}}/api/pagos/ping

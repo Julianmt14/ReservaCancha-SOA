@@ -43,8 +43,8 @@ public class WompiWebhookController {
         "estado",
         p.estado(),
         "reserva",
-        p.reserva().getId(),
+        p.reserva().id(),
         "reservaEstado",
-        p.reserva().getEstado().name());
+        p.reserva().estado().name());
   }
 }

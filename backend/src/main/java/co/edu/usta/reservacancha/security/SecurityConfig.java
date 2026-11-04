@@ -41,6 +41,9 @@ public class SecurityConfig {
             a ->
                 a.requestMatchers("/api/auth/**", "/api/wompi/webhook", "/error")
                     .permitAll()
+                    // Interfaz web (HTML, CSS y JavaScript de resources/static)
+                    .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/favicon.ico")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/canchas/**", "/api/disponibilidad/**")
                     .permitAll()
                     .requestMatchers("/api/admin/**")

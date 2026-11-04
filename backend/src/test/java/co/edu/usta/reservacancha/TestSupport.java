@@ -21,8 +21,20 @@ public final class TestSupport {
     return "t" + UUID.randomUUID().toString().substring(0, 8) + "@prueba.test";
   }
 
+  /** Token e id de un usuario registrado en la prueba. */
+  public record Sesion(String token, long id) {
+    public String bearer() {
+      return "Bearer " + token;
+    }
+  }
+
   /** Registra un jugador nuevo y devuelve su token JWT. */
   public static String registrarJugador(MockMvc mvc, ObjectMapper json) throws Exception {
+    return nuevoJugador(mvc, json).token();
+  }
+
+  /** Registra un jugador nuevo y devuelve su token y su id. */
+  public static Sesion nuevoJugador(MockMvc mvc, ObjectMapper json) throws Exception {
     String body =
         json.writeValueAsString(
             Map.of("nombre", "Jugador Prueba", "email", correoUnico(), "password", CLAVE));
@@ -33,7 +45,8 @@ public final class TestSupport {
             .andReturn()
             .getResponse()
             .getContentAsString();
-    return json.readTree(res).get("token").asText();
+    JsonNode n = json.readTree(res);
+    return new Sesion(n.get("token").asText(), n.get("id").asLong());
   }
 
   /** Inicia sesion con el administrador semilla y devuelve su token JWT. */

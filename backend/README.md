@@ -17,7 +17,7 @@ proveedor se devuelve con el mismo código y mensaje; un 5xx/401/403 del proveed
 ## Arranque
 
 ```bash
-mvn spring-boot:run          # H2 en memoria por defecto
+mvn spring-boot:run          # H2 en archivo (datos/) por defecto
 ```
 
 Usuarios de arranque: `admin@reservacancha.co` / `admin123` (ADMIN) y `jugador@reservacancha.co` /

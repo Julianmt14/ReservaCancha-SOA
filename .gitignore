@@ -30,3 +30,6 @@ Thumbs.db
 
 # Docs temp
 ~$*
+
+# Bases H2 en archivo de las aplicaciones (se crean al ejecutar)
+datos/

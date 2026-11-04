@@ -8,7 +8,8 @@ spring:
     # Base de datos propia del Proveedor 2: nadie más lee sus tablas, se usan solo por HTTP.
     # LOCK_TIMEOUT: si dos transacciones piden el mismo bloque, la segunda espera a que la primera
     # termine y entonces la restricción UNIQUE la rechaza (en vez de fallar por tiempo de espera).
-    url: ${RESERVAS_DATASOURCE_URL:jdbc:h2:mem:servicioreservas;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000}
+    # Se guarda en archivo (carpeta datos/) para que las reservas se conserven al reiniciar.
+    url: ${RESERVAS_DATASOURCE_URL:jdbc:h2:file:./datos/servicioreservas;LOCK_TIMEOUT=10000}
     username: ${RESERVAS_DATASOURCE_USERNAME:sa}
     password: ${RESERVAS_DATASOURCE_PASSWORD:}
     driver-class-name: ${RESERVAS_DATASOURCE_DRIVER:org.h2.Driver}

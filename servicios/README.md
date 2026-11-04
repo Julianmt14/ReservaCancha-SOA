@@ -51,7 +51,7 @@ reservas y pagos. Siguiendo la corrección de la docente, quedó organizado en *
 | Frontend Next.js (opcional) | `frontend/` | 3000 | — | Versión alternativa de la interfaz |
 
 Cada aplicación es un proyecto Maven aparte (Spring Boot 3.3.5, Java 21), con su propio `main`, su puerto y
-su base de datos (H2 en memoria por defecto). **Ningún servicio lee las tablas de otro**: solo comparten
+su base de datos (H2 en archivo por defecto, en `datos/`: los datos se conservan al reiniciar). **Ningún servicio lee las tablas de otro**: solo comparten
 identificadores (`canchaId`, `usuarioId`, `reservaId`) que viajan en JSON por HTTP.
 
 ### Quién es dueño de cada dato
@@ -405,8 +405,8 @@ reenvía a `POST :8085/api/pagos/notificaciones`. El servicio no llama de vuelta
 
 ## Lo que sigue
 
-- Bases de datos persistentes (Postgres) por servicio; hoy H2 en memoria: al reiniciar un proveedor se
-  pierde lo que tenía.
+- Pasar las bases a Postgres por servicio. Hoy son H2 en archivo (`datos/`): se conservan al reiniciar y
+  para empezar de cero basta con borrar esa carpeta. Las pruebas JUnit usan una base en memoria aparte.
 - Gestión de horarios y reglas desde la página del propietario (hoy vienen en la semilla o se cambian por la API).
 - Una clave por despliegue para `X-Api-Key` y el secreto JWT en variables de entorno de cada servidor, en
   vez de los valores de desarrollo.

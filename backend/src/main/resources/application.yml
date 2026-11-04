@@ -5,8 +5,9 @@ spring:
   application:
     name: reservacancha
   datasource:
-    # Por defecto H2 en memoria (dev rápido). Para Postgres descomentar y usar docker-compose.
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:reservacancha;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    # Por defecto H2 en archivo (carpeta datos/): los usuarios se conservan al reiniciar.
+    # Para Postgres se cambia con SPRING_DATASOURCE_URL y docker-compose.
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./datos/reservacancha}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}

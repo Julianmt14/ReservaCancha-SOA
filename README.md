@@ -13,7 +13,8 @@ interfaz web de la consumidora (HTML, CSS, JavaScript y Fetch) en http://localho
 ## Arquitectura
 
 Dos proveedores y una aplicación consumidora, cada uno un proyecto Spring Boot aparte con su puerto y su
-base de datos (H2 en memoria por defecto). Se comunican por HTTP con JSON y solo comparten identificadores
+base de datos (H2 en archivo por defecto, en la carpeta `datos/` de cada aplicación, así que los datos se
+conservan al reiniciar). Se comunican por HTTP con JSON y solo comparten identificadores
 (`canchaId`, `usuarioId`, `reservaId`); ninguno lee las tablas de otro.
 
 | Aplicación | Carpeta | Puerto | Es dueña de |

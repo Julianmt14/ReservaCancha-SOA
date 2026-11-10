@@ -361,6 +361,27 @@ No es un requisito de la arquitectura pedida: se conserva del avance anterior pa
 **sandbox**. Las llaves del comercio (`WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_BASE_URL`)
 viven solo en servicio-pagos.
 
+### Cómo probar el pago en local (modo de pruebas)
+
+1. Crear `servicios/servicio-pagos/config/application.properties` con las llaves **de pruebas** del comercio
+   (las del panel de Wompi en modo de pruebas). Ese archivo está en `.gitignore`: las llaves nunca se suben.
+
+   ```properties
+   app.wompi.public-key=pub_test_...
+   app.wompi.integrity-secret=test_integrity_...
+   ```
+
+   Spring Boot lo lee si servicio-pagos se arranca desde su propia carpeta (en IntelliJ, el directorio de
+   trabajo del módulo). También sirven las variables de entorno `WOMPI_PUBLIC_KEY` y `WOMPI_INTEGRITY_SECRET`.
+2. Encender servicio-pagos (8085) junto a las otras tres aplicaciones.
+3. En la web, **Mis reservas** → botón **Pagar** en una reserva PENDIENTE. Se abre el Widget de Wompi con la
+   etiqueta «Modo de pruebas»; al cerrarlo, la página confirma el pago y la reserva queda PAGADA.
+4. Datos de prueba de Wompi (docs.wompi.co, «Datos de prueba en Sandbox»): Nequi `3991111111` aprobado y
+   `3992222222` rechazado; tarjeta `4242 4242 4242 4242` aprobada y `4111 1111 1111 1111` rechazada.
+
+La página usa el Widget y no el Web Checkout por redirección, porque Wompi rechaza (403) una dirección de
+regreso en `localhost`.
+
 ```
 Navegador -> POST :8080/api/pagos/iniciar/{reservaId}       Authorization: Bearer <JWT>
   backend: toma la reserva del Proveedor 2, revisa que sea del usuario y esté PENDIENTE

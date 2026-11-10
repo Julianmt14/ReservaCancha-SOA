@@ -1,0 +1,4 @@
+# Base H2 en archivo que se crea al ejecutar
+datos/
+# Llaves de Wompi de cada equipo (secretos)
+config/application.properties

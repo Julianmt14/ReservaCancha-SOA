@@ -5,8 +5,8 @@ spring:
   application:
     name: servicio-pagos
   datasource:
-    # Base de datos propia del servicio: ReservaCancha no la toca, solo pide los pagos por HTTP.
-    url: ${PAGOS_DATASOURCE_URL:jdbc:h2:mem:serviciopagos;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    # Base de datos propia del servicio (H2 en archivo, en datos/): ReservaCancha no la toca, solo pide los pagos por HTTP.
+    url: ${PAGOS_DATASOURCE_URL:jdbc:h2:file:./datos/serviciopagos}
     username: ${PAGOS_DATASOURCE_USERNAME:sa}
     password: ${PAGOS_DATASOURCE_PASSWORD:}
     driver-class-name: ${PAGOS_DATASOURCE_DRIVER:org.h2.Driver}
@@ -18,6 +18,8 @@ spring:
 app:
   # Clave que debe mandar la aplicación consumidora en X-Api-Key (la misma del backend de ReservaCancha)
   api-key: ${PAGOS_API_KEY:clave-dev-portal-reservacancha}
+  # Llaves de PRUEBAS de Wompi: no van en el repositorio. Se ponen en config/application.properties
+  # (ignorado por Git) o en variables de entorno. Sin ellas el servicio arranca, pero no se puede pagar.
   wompi:
     public-key: ${WOMPI_PUBLIC_KEY:pub_test_XXXX}
     integrity-secret: ${WOMPI_INTEGRITY_SECRET:test_integrity_XXXX}

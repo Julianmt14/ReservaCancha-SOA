@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -19,17 +21,21 @@ import org.springframework.web.server.ResponseStatusException;
  */
 public final class ServicioRemoto {
 
+  private static final Logger log = LoggerFactory.getLogger(ServicioRemoto.class);
+
   private ServicioRemoto() {}
 
   /**
    * Conexiones con el cliente HTTP del JDK (admite PATCH, que el proveedor de reservas usa para
-   * cambiar el estado): 2 s para conectar y {@code timeoutMs} para esperar la respuesta.
+   * cambiar el estado): {@code timeoutMs} para conectar y otro tanto para esperar la respuesta. En
+   * local el proveedor apagado rechaza la conexión al instante; en Render, recién encendido, la
+   * primera conexión segura puede tardar más de 2 s.
    */
   public static JdkClientHttpRequestFactory fabrica(long timeoutMs) {
     HttpClient http =
         HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
-            .connectTimeout(Duration.ofSeconds(2))
+            .connectTimeout(Duration.ofMillis(timeoutMs))
             .build();
     JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(http);
     fabrica.setReadTimeout(Duration.ofMillis(timeoutMs));
@@ -48,6 +54,7 @@ public final class ServicioRemoto {
     try {
       return solicitud.get();
     } catch (ResourceAccessException e) {
+      log.warn("El servicio de {} no responde en {}: {}", servicio, baseUrl, e.getMessage());
       throw new ResponseStatusException(
           HttpStatus.SERVICE_UNAVAILABLE,
           "El servicio de "

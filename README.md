@@ -97,9 +97,25 @@ npx newman run tests/postman/ReservaCancha-SOA.postman_collection.json -e tests/
 | `SERVICIO_PAGOS_URL` | `http://localhost:8085` | dirección de servicio-pagos (opcional) |
 | `PAGOS_API_KEY` | clave de desarrollo | clave que el backend manda a servicio-pagos en `X-Api-Key`; la misma en los dos lados |
 | `WOMPI_EVENTS_SECRET` | `test_events_XXXX` | secreto compartido que debe enviar el webhook en `X-Webhook-Secret` |
+| `SERVICIO_*_TIMEOUT_MS` | 5000 (pagos 15000) | tiempo para conectar con cada proveedor y para esperar su respuesta |
+| `DESPERTAR_PROVEEDORES` | `false` | en `true`, al arrancar llama al ping de los tres proveedores (para el plan gratis de Render) |
 
 Las llaves del comercio (`WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_BASE_URL`) ahora son de
 servicio-pagos; ver [`servicios/README.md`](servicios/README.md).
+
+## Versión publicada (Render)
+
+La aplicación también está publicada para probarla desde cualquier celular o computador:
+**https://reservacancha-dos.onrender.com** (usuarios semilla de arriba; el pago es de Wompi en modo de pruebas).
+
+- Cuatro servicios web en el plan gratis de Render, cada uno con su `Dockerfile` y publicados desde la rama
+  `dos-dos-proveedores`: `reservacancha-dos` (consumidora), `reservacancha-dos-escenarios`,
+  `reservacancha-dos-reservas` y `reservacancha-dos-pagos`. Render entrega el puerto en `PORT`.
+- Los secretos (`JWT_SECRET`, `RESERVAS_API_KEY`, `PAGOS_API_KEY` y las llaves de pruebas de Wompi) están en las
+  variables de entorno de Render, no en el repositorio.
+- En el plan gratis cada servicio se duerme tras 15 minutos sin uso y tarda cerca de un minuto y medio en despertar:
+  conviene abrir la página unos minutos antes de una demostración. Las bases H2 de esta versión se reinician cuando
+  Render apaga el servicio (la persistencia en archivo se demuestra en local).
 
 ## API (backend)
 

@@ -44,6 +44,8 @@ app:
     url: ${SERVICIO_PAGOS_URL:http://localhost:8085}
     api-key: ${PAGOS_API_KEY:clave-dev-portal-reservacancha}
     timeout-ms: ${SERVICIO_PAGOS_TIMEOUT_MS:15000}
+  # En Render: al arrancar, despierta a los proveedores (ver DespertarProveedores)
+  despertar-proveedores: ${DESPERTAR_PROVEEDORES:false}
   wompi:
     # El webhook de Wompi llega aquí: se valida este secreto y se reenvía a servicio-pagos.
     events-secret: ${WOMPI_EVENTS_SECRET:test_events_XXXX}

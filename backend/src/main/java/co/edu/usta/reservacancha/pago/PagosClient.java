@@ -37,7 +37,7 @@ public class PagosClient {
       @Value("${app.servicio-pagos.api-key}") String apiKey,
       @Value("${app.servicio-pagos.timeout-ms:15000}") long timeoutMs) {
     SimpleClientHttpRequestFactory http = new SimpleClientHttpRequestFactory();
-    http.setConnectTimeout(Duration.ofSeconds(2));
+    http.setConnectTimeout(Duration.ofMillis(timeoutMs));
     http.setReadTimeout(Duration.ofMillis(timeoutMs));
     this.json = json;
     this.baseUrl = baseUrl;

@@ -238,6 +238,7 @@ function pintarReservas(tbody, lista, conJugador) {
     est.innerHTML = `<span class="estado ${r.estado}">${r.estado}</span>`;
     tr.appendChild(est);
     const acc = document.createElement('td');
+    if (!conJugador && r.estado === 'PENDIENTE') acc.appendChild(boton('Pagar', 'mini', () => pagarReserva(r.id)));
     if (r.estado !== 'CANCELADA') acc.appendChild(boton('Cancelar', 'mini peligro', () => cancelarReserva(r.id, conJugador)));
     tr.appendChild(acc);
     tbody.appendChild(tr);
@@ -252,6 +253,57 @@ async function cancelarReserva(id, desdeAdmin) {
     avisar('Reserva #' + id + ' cancelada. La hora quedó libre.');
     if (desdeAdmin) cargarAdminReservas(); else cargarMias();
   } catch (e) { avisar(e.message, 'error'); }
+}
+
+// ---------- pago con Wompi (modo de pruebas) ----------
+
+// La consumidora registra el pago en servicio-pagos, que devuelve la referencia y la firma de
+// integridad; con eso se abre el Widget de Wompi encima de esta página (Wompi no acepta volver
+// a una dirección localhost, por eso no se usa la redirección)
+async function pagarReserva(id) {
+  try {
+    const i = await api('POST', `/pagos/iniciar/${id}`);
+    await cargarWidgetWompi();
+    const widget = new WidgetCheckout({
+      currency: i.moneda,
+      amountInCents: i.valorCentavos,
+      reference: i.referencia,
+      publicKey: i.llavePublica,
+      signature: { integrity: i.firmaIntegridad }
+    });
+    widget.open(resultado => {
+      const t = resultado && resultado.transaction;
+      if (t && t.id) confirmarPago(id, t.id);
+      else avisar('Se cerró Wompi sin terminar el pago. La reserva sigue pendiente.', 'error');
+    });
+  } catch (e) { avisar(e.message, 'error'); }
+}
+
+function cargarWidgetWompi() {
+  if (window.WidgetCheckout) return Promise.resolve();
+  return new Promise((listo, falla) => {
+    const s = document.createElement('script');
+    s.src = 'https://checkout.wompi.co/widget.js';
+    s.onload = () => listo();
+    s.onerror = () => falla(new Error('No se pudo cargar Wompi: revisa la conexión a internet.'));
+    document.head.appendChild(s);
+  });
+}
+
+// La consumidora verifica la transacción con Wompi a través de servicio-pagos (no se confía en el navegador)
+async function confirmarPago(reservaId, transaccion) {
+  const ruta = `/pagos/confirmar/${reservaId}?transactionId=${encodeURIComponent(transaccion)}`;
+  try {
+    let p = await api('POST', ruta);
+    for (let intento = 0; p.estado === 'PENDIENTE' && intento < 5; intento++) {
+      await new Promise(listo => setTimeout(listo, 3000));
+      p = await api('POST', ruta);
+    }
+    if (p.estado === 'APROBADO') avisar(`Pago aprobado: la reserva #${reservaId} quedó PAGADA.`);
+    else if (p.estado === 'PENDIENTE') avisar(`El pago de la reserva #${reservaId} sigue en proceso en Wompi.`, 'error');
+    else avisar(`Wompi no aprobó el pago (${p.estado}). La reserva #${reservaId} sigue pendiente.`, 'error');
+  } catch (e) { avisar(e.message, 'error'); }
+  cargarMias();
 }
 
 // Pide confirmación con el mismo botón (segundo clic) para no usar ventanas emergentes
@@ -436,3 +488,14 @@ document.getElementById('fecha').value = manana.getFullYear() + '-' +
 
 pintarSesion();
 mostrar('canchas');
+
+// En el celular cada fila de una tabla se muestra como tarjeta: cada celda lleva el nombre de su columna
+function etiquetarCeldas(tabla) {
+  const titulos = [...tabla.querySelectorAll('thead th')].map(th => th.textContent);
+  tabla.querySelectorAll('tbody tr').forEach(tr =>
+    [...tr.children].forEach((td, i) => { if (!td.hasAttribute('colspan')) td.dataset.label = titulos[i] || ''; }));
+}
+document.querySelectorAll('table.tabla').forEach(tabla => {
+  etiquetarCeldas(tabla);
+  new MutationObserver(() => etiquetarCeldas(tabla)).observe(tabla.tBodies[0], { childList: true });
+});

@@ -42,13 +42,24 @@ public class SecurityConfig {
                 a.requestMatchers("/api/auth/**", "/api/wompi/webhook", "/error")
                     .permitAll()
                     // Interfaz web (HTML, CSS y JavaScript de resources/static)
-                    .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/img/**", "/favicon.ico")
+                    .requestMatchers(
+                        "/",
+                        "/index.html",
+                        "/panel",
+                        "/panel.html",
+                        "/css/**",
+                        "/js/**",
+                        "/img/**",
+                        "/favicon.ico")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/canchas/**", "/api/disponibilidad/**")
                     .permitAll()
                     // Reservar sin cuenta: solo nombre y celular
                     .requestMatchers(HttpMethod.POST, "/api/reservas/rapida")
                     .permitAll()
+                    // La agenda la ve todo el personal; el resto del panel, solo el administrador
+                    .requestMatchers(HttpMethod.GET, "/api/admin/reservas")
+                    .hasAnyRole("ADMIN", "PROPIETARIO", "EMPLEADO")
                     .requestMatchers("/api/admin/**")
                     .hasAnyRole("ADMIN", "PROPIETARIO")
                     .anyRequest()

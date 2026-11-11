@@ -63,7 +63,7 @@ cd backend && mvn spring-boot:run
 # o con Postgres para los usuarios (docker compose up -d db):
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/reservacancha SPRING_DATASOURCE_USERNAME=rc SPRING_DATASOURCE_PASSWORD=rc123 SPRING_DATASOURCE_DRIVER=org.postgresql.Driver mvn spring-boot:run
 
-# Abrir la interfaz web: http://localhost:8080
+# Abrir la interfaz web: http://localhost:8080 (panel del personal: http://localhost:8080/panel)
 
 # 4) Opcional: frontend Next.js (3000)
 cd frontend
@@ -75,14 +75,26 @@ npm run dev
 cd servicios/servicio-pagos && mvn spring-boot:run
 ```
 
-Usuarios semilla (solo desarrollo): `admin@reservacancha.co` / `admin123` y `jugador@reservacancha.co` / `jugador123`.
+Usuarios semilla (solo desarrollo): `admin@reservacancha.co` / `admin123` (administrador),
+`empleado@reservacancha.co` / `empleado123` (empleado) y `jugador@reservacancha.co` / `jugador123`.
+
+## Página pública y panel del personal
+
+| Quién | Dónde | Qué hace |
+|---|---|---|
+| Jugador | `/` | reserva sin crear cuenta (nombre y celular), paga el abono con Wompi y ve o cancela sus reservas |
+| Empleado (`EMPLEADO`) | `/panel` | agenda del día por cancha, reserva por teléfono o WhatsApp y cancelaciones |
+| Administrador (`ADMIN`, `PROPIETARIO`) | `/panel` | lo del empleado, más métricas, canchas y horarios, y crear o desactivar empleados |
+
+El registro público solo crea jugadores: pedir otro rol responde 403. Las cuentas de los empleados las crea el
+administrador desde el panel; un empleado desactivado ya no puede entrar y su token deja de servir.
 
 Pruebas Postman con las tres aplicaciones encendidas (detalle en [`tests/postman/README.md`](tests/postman/README.md)):
 
 ```bash
 npx newman run tests/postman/ReservaCancha-SOA.postman_collection.json -e tests/postman/local.postman_environment.json \
   --folder "0 · Salud" --folder "1 · Proveedor 1 (escenarios)" --folder "2 · Proveedor 2 (reservas)" --folder "3 · Consumidora" \
-  --folder "5 · CRUD: eliminar y baja lógica"
+  --folder "5 · CRUD: eliminar y baja lógica" --folder "6 · Personal: empleados y administrador"
 ```
 
 ## Variables de entorno del backend
@@ -106,7 +118,8 @@ servicio-pagos; ver [`servicios/README.md`](servicios/README.md).
 ## Versión publicada (Render)
 
 La aplicación también está publicada para probarla desde cualquier celular o computador:
-**https://reservacancha-dos.onrender.com** (usuarios semilla de arriba; el pago es de Wompi en modo de pruebas).
+**https://reservacancha-dos.onrender.com** y el panel del personal en **https://reservacancha-dos.onrender.com/panel**
+(usuarios semilla de arriba; el pago es de Wompi en modo de pruebas).
 
 - Cuatro servicios web en el plan gratis de Render, cada uno con su `Dockerfile` y publicados desde la rama
   `dos-dos-proveedores`: `reservacancha-dos` (consumidora), `reservacancha-dos-escenarios`,
@@ -123,7 +136,7 @@ La aplicación también está publicada para probarla desde cualquier celular o 
 
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
-| POST | `/api/auth/register` | público | registro (`JUGADOR` o `PROPIETARIO`; `ADMIN` se rechaza) |
+| POST | `/api/auth/register` | público | registro de jugadores (cualquier otro rol → 403) |
 | POST | `/api/auth/login` | público | login → JWT |
 | GET | `/api/canchas` | público | listar activas |
 | POST / PUT | `/api/canchas` | ADMIN, PROPIETARIO | crear / editar (la baja es `activa=false`) |
@@ -134,12 +147,16 @@ La aplicación también está publicada para probarla desde cualquier celular o 
 | POST | `/api/reservas` | JWT | crear (valida horario y traslape → 409) |
 | GET | `/api/reservas/mias` | JWT | mis reservas |
 | GET | `/api/reservas/cancha/{id}` | JWT | ocupación desde hoy; el personal ve además quién reservó |
-| POST | `/api/reservas/{id}/cancelar` | dueño, ADMIN, PROPIETARIO | cancelar |
-| POST | `/api/pagos/iniciar/{reservaId}` | dueño, ADMIN, PROPIETARIO | referencia y firma de integridad Wompi por el abono de la cancha (400 si la cancha no pide abono) |
-| POST | `/api/pagos/confirmar/{reservaId}?transactionId=` | dueño, ADMIN, PROPIETARIO | confirma consultando la transacción a Wompi |
-| GET | `/api/pagos/reserva/{reservaId}` | dueño, ADMIN, PROPIETARIO | pagos de la reserva |
+| POST | `/api/reservas/{id}/cancelar` | dueño o personal | cancelar (personal = ADMIN, PROPIETARIO, EMPLEADO) |
+| POST | `/api/pagos/iniciar/{reservaId}` | dueño o personal | referencia y firma de integridad Wompi por el abono de la cancha (400 si la cancha no pide abono) |
+| POST | `/api/pagos/confirmar/{reservaId}?transactionId=` | dueño o personal | confirma consultando la transacción a Wompi |
+| GET | `/api/pagos/reserva/{reservaId}` | dueño o personal | pagos de la reserva |
 | POST | `/api/wompi/webhook` | secreto compartido | evento de Wompi |
-| GET | `/api/admin/resumen`, `/reservas`, `/pagos` | ADMIN, PROPIETARIO | consultas administrativas |
+| GET | `/api/admin/reservas` | personal | todas las reservas (agenda del panel) |
+| GET | `/api/admin/resumen`, `/pagos` | ADMIN, PROPIETARIO | consultas administrativas |
+| GET | `/api/admin/metricas?desde=&hasta=` | ADMIN, PROPIETARIO | reservas, ingresos, abonos y ocupación por cancha, día y hora (máximo 92 días) |
+| GET / POST | `/api/admin/empleados` | ADMIN, PROPIETARIO | listar el personal / crear un empleado (correo repetido → 409) |
+| PATCH | `/api/admin/empleados/{id}` | ADMIN, PROPIETARIO | activar o desactivar un empleado (`{"activo": false}`) |
 
 Las rutas de pagos no cambiaron para el frontend, pero el backend ya no guarda los pagos: revisa la
 reserva y los permisos y le pide la operación a servicio-pagos por HTTP. Si ese servicio está apagado,

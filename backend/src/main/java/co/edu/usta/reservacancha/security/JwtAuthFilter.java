@@ -41,7 +41,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                       .findByEmail(username)
                       .orElseThrow(() -> new UsernameNotFoundException(username));
           UserDetails u = uds.loadUserByUsername(email);
-          if (jwt.valid(token, u)) {
+          // Una cuenta desactivada (empleado dado de baja) deja de servir aunque tenga token
+          if (u.isEnabled() && jwt.valid(token, u)) {
             SecurityContextHolder.getContext()
                 .setAuthentication(
                     new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities()));

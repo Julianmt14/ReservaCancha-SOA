@@ -73,9 +73,9 @@ public class ReservaOrquestador {
   }
 
   /**
-   * Cancela una reserva: solo su dueño o el personal (ADMIN/PROPIETARIO). Un jugador solo puede
-   * hasta {@code horasCancelacion} antes del inicio, regla que pone el proveedor 1; el personal
-   * puede siempre. Luego el proveedor 2 la marca CANCELADA y libera el horario.
+   * Cancela una reserva: solo su dueño o el personal (ADMIN/PROPIETARIO/EMPLEADO). Un jugador solo
+   * puede hasta {@code horasCancelacion} antes del inicio, regla que pone el proveedor 1; el
+   * personal puede siempre. Luego el proveedor 2 la marca CANCELADA y libera el horario.
    */
   public ReservaVista cancelar(Long id, Usuario quien) {
     ReservaDto r = reservas.una(id);
@@ -128,7 +128,9 @@ public class ReservaOrquestador {
   }
 
   public static boolean esPersonal(Usuario u) {
-    return u.getRol() == Role.ADMIN || u.getRol() == Role.PROPIETARIO;
+    return u.getRol() == Role.ADMIN
+        || u.getRol() == Role.PROPIETARIO
+        || u.getRol() == Role.EMPLEADO;
   }
 
   private UsuarioResumen usuarioDe(Long id) {

@@ -297,12 +297,18 @@ class ReservaIntegrationTest {
     String body =
         json.writeValueAsString(
             Map.of(
-                "nombre", nombre,
-                "celular", celular,
-                "canchaId", 1,
-                "fecha", fecha.toString(),
-                "horaInicio", "15:00",
-                "horaFin", "16:00"));
+                "nombre",
+                nombre,
+                "celular",
+                celular,
+                "canchaId",
+                1,
+                "fecha",
+                fecha.toString(),
+                "horaInicio",
+                "15:00",
+                "horaFin",
+                "16:00"));
     return mvc.perform(
         post("/api/reservas/rapida").contentType(MediaType.APPLICATION_JSON).content(body));
   }
@@ -676,8 +682,16 @@ class ReservaIntegrationTest {
         .thenReturn(reserva(52L, dueno.id(), enDias(6, 20), EstadoReserva.PENDIENTE));
     CanchaDto sinAbono =
         new CanchaDto(
-            1L, 1L, "Cancha 1 — Sintética F5", "FUTBOL", "Fútbol 5", "Sintética",
-            "Villavicencio", new BigDecimal("60000.00"), true, new ReglasDto(60, 3, 0));
+            1L,
+            1L,
+            "Cancha 1 — Sintética F5",
+            "FUTBOL",
+            "Fútbol 5",
+            "Sintética",
+            "Villavicencio",
+            new BigDecimal("60000.00"),
+            true,
+            new ReglasDto(60, 3, 0));
     when(escenarios.cancha(1L)).thenReturn(sinAbono);
 
     JsonNode error =

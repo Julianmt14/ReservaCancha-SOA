@@ -65,7 +65,8 @@ public class ReservaController {
     ReservaVista r =
         orquestador.crear(u, req.canchaId(), req.fecha(), req.horaInicio(), req.horaFin());
     AuthResponse sesion =
-        new AuthResponse(jwt.generate(u), u.getEmail(), u.getRol().name(), u.getId(), u.getNombre());
+        new AuthResponse(
+            jwt.generate(u), u.getEmail(), u.getRol().name(), u.getId(), u.getNombre());
     return new ReservaRapidaVista(r, sesion, whatsapp.isBlank() ? null : whatsapp);
   }
 
@@ -134,8 +135,7 @@ public class ReservaController {
 
   public record ReservaRapida(
       @NotBlank @Size(max = 60) String nombre,
-      @NotBlank
-          @Pattern(regexp = "3\\d{9}", message = "debe tener 10 dígitos y empezar por 3")
+      @NotBlank @Pattern(regexp = "3\\d{9}", message = "debe tener 10 dígitos y empezar por 3")
           String celular,
       @NotNull Long canchaId,
       @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,

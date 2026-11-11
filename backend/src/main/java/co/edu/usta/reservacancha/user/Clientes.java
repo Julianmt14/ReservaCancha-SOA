@@ -6,9 +6,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
- * Jugadores que reservan sin crear cuenta: se identifican con su nombre y su celular. La consumidora
- * les guarda un usuario interno (el proveedor 2 necesita un usuarioId) con un correo que sale del
- * celular y una contraseña al azar que nadie usa: entran con el token que reciben al reservar.
+ * Jugadores que reservan sin crear cuenta: se identifican con su nombre y su celular. La
+ * consumidora les guarda un usuario interno (el proveedor 2 necesita un usuarioId) con un correo
+ * que sale del celular y una contraseña al azar que nadie usa: entran con el token que reciben al
+ * reservar.
  */
 @Service
 public class Clientes {
@@ -23,7 +24,9 @@ public class Clientes {
     this.encoder = encoder;
   }
 
-  /** El jugador de ese celular; si es la primera vez, se crea. El nombre queda el último que dio. */
+  /**
+   * El jugador de ese celular; si es la primera vez, se crea. El nombre queda el último que dio.
+   */
   public Usuario porCelular(String nombre, String celular) {
     String email = celular + DOMINIO;
     Usuario u = usuarios.findByEmail(email).orElseGet(() -> nuevo(nombre, email));

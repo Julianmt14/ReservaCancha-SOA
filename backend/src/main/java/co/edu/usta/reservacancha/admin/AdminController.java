@@ -3,8 +3,10 @@ package co.edu.usta.reservacancha.admin;
 import co.edu.usta.reservacancha.pago.PagoService;
 import co.edu.usta.reservacancha.reserva.ReservaOrquestador;
 import co.edu.usta.reservacancha.reservas.ReservasClient;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,12 +19,17 @@ public class AdminController {
   private final ReservasClient reservas;
   private final ReservaOrquestador orquestador;
   private final PagoService pagos;
+  private final MetricasService metricas;
 
   public AdminController(
-      ReservasClient reservas, ReservaOrquestador orquestador, PagoService pagos) {
+      ReservasClient reservas,
+      ReservaOrquestador orquestador,
+      PagoService pagos,
+      MetricasService metricas) {
     this.reservas = reservas;
     this.orquestador = orquestador;
     this.pagos = pagos;
+    this.metricas = metricas;
   }
 
   /**
@@ -49,9 +56,23 @@ public class AdminController {
     return r;
   }
 
+  /** Agenda: la ven también los empleados (quién reservó, su celular y el estado del pago). */
   @GetMapping("/reservas")
+  @PreAuthorize("hasAnyRole('ADMIN','PROPIETARIO','EMPLEADO')")
   public Object todas() {
     return orquestador.vistas(reservas.todas());
+  }
+
+  /** Reservas, ingresos, abonos cobrados, ocupación por cancha y horas más pedidas. */
+  @GetMapping("/metricas")
+  public MetricasService.Metricas metricas(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate desde,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate hasta) {
+    LocalDate hoy = LocalDate.now();
+    return metricas.calcular(
+        desde != null ? desde : hoy.minusDays(6), hasta != null ? hasta : hoy.plusDays(7));
   }
 
   @GetMapping("/pagos")

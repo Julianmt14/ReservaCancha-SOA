@@ -37,8 +37,9 @@ public class AuthController {
     if (usuarios.existsByEmail(r.email()))
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email ya registrado");
     Role rol = r.rol() == null ? Role.JUGADOR : r.rol();
-    // El registro publico nunca crea administradores (SEC-01: escalada de privilegios)
-    if (rol == Role.ADMIN)
+    // El registro publico solo crea jugadores: las cuentas del personal las crea el administrador
+    // (SEC-01: escalada de privilegios)
+    if (rol != Role.JUGADOR)
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Rol no permitido en el registro");
     Usuario u = new Usuario(r.nombre(), r.email(), encoder.encode(r.password()), rol);
     usuarios.save(u);

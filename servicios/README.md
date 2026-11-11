@@ -206,6 +206,8 @@ Conserva su API pública y sus formas JSON (el frontend no cambió). Lo que hace
 | `POST /api/reservas/{id}/cancelar` | regla `horasCancelacion` | `PATCH estado CANCELADA` |
 | `POST /api/pagos/...` (opcional) | — | toma la reserva; si el pago se aprueba, `PATCH estado PAGADA` |
 | `GET /api/admin/resumen`, `/reservas`, `/pagos` | canchas | `totalReservas`, reservas |
+| `GET /api/admin/metricas?desde&hasta` | canchas y horarios (horas que abre cada una) | reservas del rango |
+| `GET/POST/PATCH /api/admin/empleados` | — | — (usuarios propios de la consumidora) |
 
 Formas JSON que recibe el frontend: Cancha `{id, nombre, tipo, superficie, ubicacion, precioHora, activa}`
 (+ `deporte`, `reglas`); Horario `{id, cancha:{id}, diaSemana, horaApertura, horaCierre, activo}`; Reserva
@@ -310,7 +312,8 @@ cd servicios/servicio-pagos      && mvn spring-boot:run   # 8085  opcional: solo
 cd frontend                      && npm run dev           # 3000  opcional: interfaz en Next.js
 ```
 
-Abrir http://localhost:8080 (admin semilla `admin@reservacancha.co` / `admin123`, jugador
+Abrir http://localhost:8080 para reservar y http://localhost:8080/panel para el personal (admin semilla
+`admin@reservacancha.co` / `admin123`, empleado `empleado@reservacancha.co` / `empleado123`, jugador
 `jugador@reservacancha.co` / `jugador123`). El archivo [`pruebas.http`](pruebas.http) prueba cada servicio
 directamente desde IntelliJ, antes de pasar por la página.
 

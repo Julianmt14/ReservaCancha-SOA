@@ -20,8 +20,8 @@ proveedor se devuelve con el mismo código y mensaje; un 5xx/401/403 del proveed
 mvn spring-boot:run          # H2 en archivo (datos/) por defecto
 ```
 
-Usuarios de arranque: `admin@reservacancha.co` / `admin123` (ADMIN) y `jugador@reservacancha.co` /
-`jugador123` (JUGADOR).
+Usuarios de arranque: `admin@reservacancha.co` / `admin123` (ADMIN), `empleado@reservacancha.co` /
+`empleado123` (EMPLEADO) y `jugador@reservacancha.co` / `jugador123` (JUGADOR).
 
 Con Postgres: levantar `docker compose up -d db` en la raíz y definir `SPRING_DATASOURCE_URL`,
 `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` y `SPRING_DATASOURCE_DRIVER`.
@@ -36,6 +36,7 @@ Las pruebas no necesitan los proveedores en ejecución (`src/test`):
 
 | Clase | Qué verifica |
 |---|---|
+| `PersonalIntegrationTest` | registro cerrado para el personal (403), el administrador crea, lista y desactiva empleados, el empleado ve la agenda y cancela pero no ve métricas ni crea canchas, empleado desactivado sin acceso, cálculo de las métricas |
 | `AuthIntegrationTest` | registro (sin rol `ADMIN`, contraseña de 8 a 72 caracteres, correo repetido), login 401, acceso por rol |
 | `ReservaIntegrationTest` | con los clientes simulados (`@MockBean`): la reserva creada tiene la forma de siempre y manda a servicio-reservas el valor cotizado; servicio-escenarios caído → 503 sin llegar a servicio-reservas; 400 y 409 de los proveedores se propagan; cancelación (otro jugador 403, jugador a menos de 3 h 400, personal siempre); disponibilidad = franjas − ocupación; SEC-01 sin token; reenvío del token en las escrituras; pagos ajenos (403) y webhook aprobado que pide `PAGADA` |
 | `EscenariosClientTest`, `ReservasClientTest` | cada cliente contra un servidor HTTP falso o un puerto cerrado: 503, propagación de 400/404/409, 502, `X-Api-Key`, `Authorization`, PATCH |
@@ -55,7 +56,7 @@ cancha/      API /api/canchas (lee y escribe en el Proveedor 1)
 horario/     API /api/horarios (Proveedor 1, con la forma {cancha:{id}})
 reserva/     API /api/reservas y /api/disponibilidad; ReservaOrquestador integra los dos proveedores
 pago/        pagos: PagoService toma la reserva del Proveedor 2 y PagosClient llama a servicio-pagos; webhook de Wompi
-admin/       consultas para administrador y propietario
+admin/       consultas del personal, métricas y cuentas de empleados
 common/      manejo global de errores y ServicioRemoto (tiempos de espera y traducción de errores)
 ```
 

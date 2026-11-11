@@ -33,7 +33,8 @@ import org.springframework.test.web.servlet.ResultActions;
 
 /**
  * Pruebas del contrato del Proveedor 1. La base H2 se comparte entre pruebas: las que escriben usan
- * canchas nuevas para no cambiar la semilla (canchas 1 a 6; la 1 y la 2 abren todos los días 06:00-22:00).
+ * canchas nuevas para no cambiar la semilla (canchas 1 a 3 de Mónaco, abiertas de 14:00 a 22:00; la 1, de
+ * vóley playa, no pide abono).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -113,7 +114,7 @@ class EscenariosApiTest {
     mvc.perform(get("/api/establecimientos"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(1))
-        .andExpect(jsonPath("$[0].nombre").value("ReservaCancha Villavicencio"))
+        .andExpect(jsonPath("$[0].nombre").value("Canchas Mónaco"))
         .andExpect(jsonPath("$[0].ciudad").value("Villavicencio"));
   }
 
@@ -122,17 +123,17 @@ class EscenariosApiTest {
     String body =
         mvc.perform(get("/api/canchas"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[*].id", hasItems(1, 2, 3, 4, 5, 6)))
+            .andExpect(jsonPath("$[*].id", hasItems(1, 2, 3)))
             .andExpect(jsonPath("$[*].activa", not(hasItem(false))))
             .andExpect(jsonPath("$[0].establecimientoId").value(1))
-            .andExpect(jsonPath("$[0].nombre").value("Cancha 1 — Sintética F5"))
-            .andExpect(jsonPath("$[0].deporte").value("FUTBOL"))
-            .andExpect(jsonPath("$[0].tipo").value("Fútbol 5"))
-            .andExpect(jsonPath("$[0].superficie").value("Sintética"))
+            .andExpect(jsonPath("$[0].nombre").value("Cancha 1 — Vóley playa"))
+            .andExpect(jsonPath("$[0].deporte").value("VOLEY"))
+            .andExpect(jsonPath("$[0].tipo").value("Vóley playa"))
+            .andExpect(jsonPath("$[0].superficie").value("Arena"))
             .andExpect(jsonPath("$[0].ubicacion").value("Villavicencio"))
             .andExpect(jsonPath("$[0].reglas.duracionMinimaMin").value(60))
             .andExpect(jsonPath("$[0].reglas.horasCancelacion").value(3))
-            .andExpect(jsonPath("$[0].reglas.porcentajeAbono").value(50))
+            .andExpect(jsonPath("$[0].reglas.porcentajeAbono").value(0))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -140,7 +141,8 @@ class EscenariosApiTest {
 
     mvc.perform(get("/api/canchas").param("deporte", "futbol").param("establecimientoId", "1"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[*].id", hasItems(1, 2)));
+        .andExpect(jsonPath("$[*].id", hasItems(2, 3)))
+        .andExpect(jsonPath("$[*].id", not(hasItem(1))));
     mvc.perform(get("/api/canchas").param("establecimientoId", "99"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
@@ -164,7 +166,7 @@ class EscenariosApiTest {
         .andExpect(jsonPath("$[0].id").value(1))
         .andExpect(jsonPath("$[0].canchaId").value(1))
         .andExpect(jsonPath("$[0].diaSemana").value("MONDAY"))
-        .andExpect(jsonPath("$[0].horaApertura").value("06:00:00"))
+        .andExpect(jsonPath("$[0].horaApertura").value("14:00:00"))
         .andExpect(jsonPath("$[0].horaCierre").value("22:00:00"))
         .andExpect(jsonPath("$[0].activo").value(true));
   }
@@ -178,11 +180,11 @@ class EscenariosApiTest {
         .andExpect(jsonPath("$.canchaId").value(1))
         .andExpect(jsonPath("$.fecha").value(FECHA))
         .andExpect(jsonPath("$.abierta").value(true))
-        .andExpect(jsonPath("$.franjas", hasSize(16)))
-        .andExpect(jsonPath("$.franjas[0].inicio").value("06:00"))
-        .andExpect(jsonPath("$.franjas[0].fin").value("07:00"))
-        .andExpect(jsonPath("$.franjas[15].inicio").value("21:00"))
-        .andExpect(jsonPath("$.franjas[15].fin").value("22:00"));
+        .andExpect(jsonPath("$.franjas", hasSize(8)))
+        .andExpect(jsonPath("$.franjas[0].inicio").value("14:00"))
+        .andExpect(jsonPath("$.franjas[0].fin").value("15:00"))
+        .andExpect(jsonPath("$.franjas[7].inicio").value("21:00"))
+        .andExpect(jsonPath("$.franjas[7].fin").value("22:00"));
   }
 
   @Test
@@ -210,7 +212,7 @@ class EscenariosApiTest {
             .andReturn()
             .getResponse()
             .getContentAsString();
-    assertThat(body).contains("\"valorTotal\":60000.00").contains("\"valorAbono\":30000.00");
+    assertThat(body).contains("\"valorTotal\":60000.00").contains("\"valorAbono\":0");
 
     // 90 minutos en la cancha 2 (90.000/h), horas con segundos: 135.000 y abono de 67.500
     String body2 =
@@ -253,7 +255,7 @@ class EscenariosApiTest {
     cotizar(1, FECHA, "22:00", "21:00")
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error").value("horaFin debe ser mayor a horaInicio"));
-    cotizar(1, LocalDate.now().minusDays(2).toString(), "10:00", "11:00")
+    cotizar(1, LocalDate.now().minusDays(2).toString(), "15:00", "16:00")
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error").value("No se puede reservar en un horario que ya pasó"));
     long inactiva = canchaNueva("Cancha inactiva", false);

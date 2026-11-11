@@ -102,7 +102,7 @@
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
-                  "pm.test('es una lista con las seis canchas semilla', () => { pm.expect(j).to.be.an('array'); pm.expect(j.length).to.be.at.least(6); });",
+                  "pm.test('es una lista con las tres canchas semilla', () => { pm.expect(j).to.be.an('array'); pm.expect(j.length).to.be.at.least(3); });",
                   "pm.test('solo canchas activas', () => j.forEach(c => pm.expect(c.activa).to.eql(true)));",
                   "pm.test('forma CanchaDto', () => pm.expect(j[0]).to.include.keys('id','establecimientoId','nombre','deporte','tipo','superficie','ubicacion','precioHora','activa','reglas'));"
                 ]
@@ -125,7 +125,7 @@
           }
         },
         {
-          "name": "Una cancha (1 · Sintética F5)",
+          "name": "Una cancha (1 · Vóley playa)",
           "event": [
             {
               "listen": "test",
@@ -134,9 +134,9 @@
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const c = pm.response.json();",
-                  "pm.test('cancha 1 de fútbol 5', () => { pm.expect(c.id).to.eql(1); pm.expect(c.tipo).to.eql('Fútbol 5'); pm.expect(c.deporte).to.eql('FUTBOL'); });",
+                  "pm.test('cancha 1 de vóley playa', () => { pm.expect(c.id).to.eql(1); pm.expect(c.tipo).to.eql('Vóley playa'); pm.expect(c.deporte).to.eql('VOLEY'); });",
                   "pm.test('precio por hora 60000', () => pm.expect(Number(c.precioHora)).to.eql(60000));",
-                  "pm.test('reglas 60 min / 3 h / 50 %', () => pm.expect(c.reglas).to.eql({ duracionMinimaMin: 60, horasCancelacion: 3, porcentajeAbono: 50 }));"
+                  "pm.test('reglas 60 min / 3 h / sin abono', () => pm.expect(c.reglas).to.eql({ duracionMinimaMin: 60, horasCancelacion: 3, porcentajeAbono: 0 }));"
                 ]
               }
             }
@@ -200,7 +200,7 @@
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
                   "pm.test('los 7 días de la semana', () => pm.expect(j.map(h => h.diaSemana)).to.include.members(['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']));",
-                  "pm.test('de 06:00 a 22:00 y activos', () => j.forEach(h => { pm.expect(h.horaApertura).to.eql('06:00:00'); pm.expect(h.horaCierre).to.eql('22:00:00'); pm.expect(h.activo).to.eql(true); pm.expect(h.canchaId).to.eql(1); }));"
+                  "pm.test('de 14:00 a 22:00 y activos', () => j.forEach(h => { pm.expect(h.horaApertura).to.eql('14:00:00'); pm.expect(h.horaCierre).to.eql('22:00:00'); pm.expect(h.activo).to.eql(true); pm.expect(h.canchaId).to.eql(1); }));"
                 ]
               }
             }
@@ -233,7 +233,7 @@
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
                   "pm.test('cancha abierta ese día', () => { pm.expect(j.canchaId).to.eql(1); pm.expect(j.fecha).to.eql(pm.environment.get('fecha')); pm.expect(j.abierta).to.eql(true); });",
-                  "pm.test('16 franjas de 06:00 a 22:00', () => { pm.expect(j.franjas).to.have.lengthOf(16); pm.expect(j.franjas[0]).to.eql({ inicio: '06:00', fin: '07:00' }); pm.expect(j.franjas[15]).to.eql({ inicio: '21:00', fin: '22:00' }); });"
+                  "pm.test('8 franjas de 14:00 a 22:00', () => { pm.expect(j.franjas).to.have.lengthOf(8); pm.expect(j.franjas[0]).to.eql({ inicio: '14:00', fin: '15:00' }); pm.expect(j.franjas[7]).to.eql({ inicio: '21:00', fin: '22:00' }); });"
                 ]
               }
             }
@@ -272,7 +272,7 @@
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
                   "pm.test('60 minutos', () => pm.expect(j.minutos).to.eql(60));",
-                  "pm.test('valor total 60000 y abono 50 % = 30000', () => { pm.expect(Number(j.valorTotal)).to.eql(60000); pm.expect(Number(j.valorAbono)).to.eql(30000); });",
+                  "pm.test('valor total 60000 y sin abono (la cancha 1 se paga en la cancha)', () => { pm.expect(Number(j.valorTotal)).to.eql(60000); pm.expect(Number(j.valorAbono)).to.eql(0); });",
                   "pm.test('informa la regla de cancelación (3 h)', () => pm.expect(j.horasCancelacion).to.eql(3));",
                   "pm.test('horas en formato HH:mm:ss', () => { pm.expect(j.horaInicio).to.eql('21:00:00'); pm.expect(j.horaFin).to.eql('22:00:00'); });"
                 ]
@@ -373,7 +373,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=10:00&horaFin=10:30",
+              "raw": "{{escenarios}}/api/canchas/1/cotizacion?fecha={{fecha}}&horaInicio=14:00&horaFin=14:30",
               "host": [
                 "{{escenarios}}"
               ],
@@ -390,11 +390,11 @@
                 },
                 {
                   "key": "horaInicio",
-                  "value": "10:00"
+                  "value": "14:00"
                 },
                 {
                   "key": "horaFin",
-                  "value": "10:30"
+                  "value": "14:30"
                 }
               ]
             }
@@ -1172,9 +1172,9 @@
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
-                  "pm.test('al menos las seis canchas semilla', () => pm.expect(j.length).to.be.at.least(6));",
+                  "pm.test('al menos las tres canchas semilla', () => pm.expect(j.length).to.be.at.least(3));",
                   "pm.test('forma que espera el frontend', () => pm.expect(j[0]).to.include.keys('id','nombre','tipo','superficie','ubicacion','precioHora','activa'));",
-                  "pm.test('incluye la cancha 2 de fútbol 8', () => pm.expect(j.some(c => c.id === 2 && c.tipo === 'Fútbol 8')).to.eql(true));"
+                  "pm.test('incluye la cancha 2 de fútbol 7', () => pm.expect(j.some(c => c.id === 2 && c.tipo === 'Fútbol 7')).to.eql(true));"
                 ]
               }
             }

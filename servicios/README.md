@@ -118,7 +118,8 @@ Sin semilla: las reservas las crea la consumidora.
    historial) y la hora vuelve a estar libre.
 
 Como los bloques son de 30 minutos, también se detecta un traslape parcial: 19:30–20:30 choca con
-19:00–20:00 en el bloque de 19:30. Por eso las horas deben ser en punto o y media.
+19:00–20:00 en el bloque de 19:30. En Mónaco el P1 solo deja reservar 1 o 2 horas en punto, así que desde
+la web los choques son de hora completa (por ejemplo 15:00–17:00 contra 16:00–17:00).
 
 ---
 
@@ -162,9 +163,9 @@ activa?, duracionMinimaMin?, horasCancelacion?, porcentajeAbono?}`. Sin establec
 de siempre `{nombre, tipo, superficie, ubicacion, precioHora, activa}`.
 
 Errores de la cotización, en este orden: cancha inexistente → 404; cancha inactiva → 400 «Cancha inactiva»;
-`horaFin` ≤ `horaInicio` → 400 «horaFin debe ser mayor a horaInicio»; horas que no son :00 ni :30 → 400
-«Las horas deben ser en punto o y media»; menos de la duración mínima → 400 «La reserva mínima es de 60
-minutos»; fecha u hora pasada → 400 «No se puede reservar en un horario que ya pasó»; sin horario ese día o
+`horaFin` ≤ `horaInicio` → 400 «horaFin debe ser mayor a horaInicio»; menos de la duración mínima → 400
+«La reserva mínima es de 60 minutos»; horas que no son en punto → 400 «Las horas deben ser en punto»;
+duración distinta de 1 o 2 horas → 400 «Solo se puede reservar 1 o 2 horas»; fecha u hora pasada → 400 «No se puede reservar en un horario que ya pasó»; sin horario ese día o
 fuera de él → 400 «Fuera del horario de operación de la cancha». `valorTotal = precioHora × minutos / 60` y
 `valorAbono = valorTotal × porcentajeAbono / 100` (2 decimales, `HALF_UP`).
 
@@ -288,7 +289,8 @@ constantes del código:
 | Regla | Valor en la semilla | Dónde se aplica |
 |---|---|---|
 | Duración mínima | 60 minutos (`duracion_minima_min`) | cotización del P1 |
-| Bloques | horas en punto o y media (30 min) | cotización del P1 y creación en el P2 |
+| Duración | 1 o 2 horas, en punto | cotización del P1 |
+| Bloques | de 30 min: el P2 guarda cada media hora ocupada | creación en el P2 |
 | Horario de operación | 14:00–22:00, los 7 días (`horarios`) | franjas y cotización del P1 |
 | Cancelación | hasta 3 h antes del partido (`horas_cancelacion`), para jugadores | consumidora, con la regla del P1 |
 | Abono | 50 % en fútbol, 0 % en vóley playa (`porcentaje_abono`) | cotización del P1 (`valorAbono`); el pago en línea es solo el abono y la cancha sin abono se paga en el sitio |

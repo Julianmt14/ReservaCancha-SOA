@@ -214,15 +214,15 @@ class EscenariosApiTest {
             .getContentAsString();
     assertThat(body).contains("\"valorTotal\":60000.00").contains("\"valorAbono\":0");
 
-    // 90 minutos en la cancha 2 (90.000/h), horas con segundos: 135.000 y abono de 67.500
+    // 2 horas en la cancha 2 (90.000/h), horas con segundos: 180.000 y abono de 90.000
     String body2 =
-        cotizar(2, FECHA, "20:30:00", "22:00:00")
+        cotizar(2, FECHA, "20:00:00", "22:00:00")
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.minutos").value(90))
+            .andExpect(jsonPath("$.minutos").value(120))
             .andReturn()
             .getResponse()
             .getContentAsString();
-    assertThat(body2).contains("\"valorTotal\":135000.00").contains("\"valorAbono\":67500.00");
+    assertThat(body2).contains("\"valorTotal\":180000.00").contains("\"valorAbono\":90000.00");
   }
 
   @Test
@@ -237,10 +237,22 @@ class EscenariosApiTest {
   }
 
   @Test
-  void horasQueNoSonEnPuntoNiYMediaResponden400() throws Exception {
+  void horasQueNoSonEnPuntoResponden400() throws Exception {
     cotizar(1, FECHA, "21:15", "22:15")
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error").value("Las horas deben ser en punto o y media"));
+        .andExpect(jsonPath("$.error").value("Las horas deben ser en punto"));
+    // 1 h 30 ya no se ofrece
+    cotizar(1, FECHA, "20:30", "22:00")
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error").value("Las horas deben ser en punto"));
+  }
+
+  @Test
+  void soloSePuedeReservarUnaODosHoras() throws Exception {
+    cotizar(1, FECHA, "18:00", "21:00")
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error").value("Solo se puede reservar 1 o 2 horas"));
+    cotizar(1, FECHA, "19:00", "21:00").andExpect(status().isOk());
   }
 
   @Test

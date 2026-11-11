@@ -1,10 +1,6 @@
-// Interfaz web de ReservaCancha: todo se pide con fetch a la consumidora (/api en el puerto 8080).
-// La consumidora es la única que habla con los proveedores (escenarios :8081 y reservas :8082).
+// Página pública de ReservaCancha: el jugador reserva sin cuenta, con nombre y celular.
+// El personal entra por /panel (panel.js). Las utilidades comunes están en comun.js.
 
-const DIAS = { MONDAY: 'Lunes', TUESDAY: 'Martes', WEDNESDAY: 'Miércoles', THURSDAY: 'Jueves',
-  FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo' };
-const DIA_CORTO = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const DIAS_A_MOSTRAR = 14;
 
 let sesion = leer('sesion');
@@ -14,132 +10,15 @@ const eleccion = { cancha: null, fecha: null, hora: null, minutos: 60 };
 let disponibilidad = null;
 let ultimaReserva = null;
 
-// ---------- utilidades ----------
-
-function leer(clave) {
-  try { return JSON.parse(localStorage.getItem(clave)); } catch (e) { return null; }
-}
-
-function guardar(clave, valor) {
-  try {
-    if (valor) localStorage.setItem(clave, JSON.stringify(valor)); else localStorage.removeItem(clave);
-  } catch (e) { /* sin almacenamiento: dura hasta recargar */ }
-}
+// El token del jugador sale de la reserva que hizo en este celular
+conexion.token = () => sesion && sesion.token;
+conexion.alVencer = () => guardarSesion(null);
+conexion.mensajeVencida = 'Tu sesión terminó: vuelve a reservar con tu celular.';
 
 function guardarSesion(s) {
   sesion = s;
   guardar('sesion', s);
   pintarSesion();
-}
-
-function esAdmin() {
-  return sesion && (sesion.rol === 'ADMIN' || sesion.rol === 'PROPIETARIO');
-}
-
-// Llama a la consumidora con JSON y el JWT; si responde error, lanza el mensaje que trae el JSON
-async function api(metodo, ruta, cuerpo) {
-  const cabeceras = { 'Content-Type': 'application/json' };
-  if (sesion) cabeceras['Authorization'] = 'Bearer ' + sesion.token;
-  let resp;
-  try {
-    resp = await fetch('/api' + ruta, {
-      method: metodo,
-      headers: cabeceras,
-      body: cuerpo ? JSON.stringify(cuerpo) : undefined
-    });
-  } catch (e) {
-    throw new Error('No hay conexión con la aplicación consumidora (puerto 8080).');
-  }
-  const texto = await resp.text();
-  let datos = null;
-  try { datos = texto ? JSON.parse(texto) : null; } catch (e) { /* respuesta que no es JSON */ }
-  if (!resp.ok) {
-    if (resp.status === 401 || resp.status === 403) {
-      if (resp.status === 401 && sesion) guardarSesion(null);
-      throw new Error((datos && datos.error) || 'Tu sesión terminó: vuelve a reservar con tu celular.');
-    }
-    let msg = (datos && datos.error) || ('Error ' + resp.status);
-    if (datos && datos.detalles) msg += ': ' + datos.detalles.map(d => d.campo + ' ' + d.msg).join(', ');
-    throw new Error(msg);
-  }
-  return datos;
-}
-
-function avisar(texto, tipo) {
-  const caja = document.getElementById('aviso');
-  caja.textContent = texto;
-  caja.className = 'aviso ' + (tipo || 'ok');
-  clearTimeout(avisar.t);
-  avisar.t = setTimeout(() => caja.classList.add('oculto'), 6000);
-}
-
-function pesos(valor) {
-  return valor == null ? '—' : '$' + Math.round(Number(valor)).toLocaleString('es-CO');
-}
-
-function hhmm(h) {
-  return h ? String(h).substring(0, 5) : '';
-}
-
-function minutosDe(hora) {
-  const [h, m] = String(hora).split(':').map(Number);
-  return h * 60 + m;
-}
-
-function horaDe(minutos) {
-  return String(Math.floor(minutos / 60)).padStart(2, '0') + ':' + String(minutos % 60).padStart(2, '0');
-}
-
-// "19:00" -> "7:00 p. m."
-function horaBonita(hora) {
-  const [h, m] = hhmm(hora).split(':').map(Number);
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return h12 + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.');
-}
-
-// "19:00" y "20:00" -> "7:00 a 8:00 p. m." (si las dos son de la tarde, se dice una vez)
-function rangoBonito(ini, fin) {
-  const a = horaBonita(ini), b = horaBonita(fin);
-  return a.slice(-5) === b.slice(-5) ? a.slice(0, -6) + ' a ' + b : a + ' a ' + b;
-}
-
-function isoDe(d) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-
-// "2026-11-12" -> "jue 12 nov"
-function fechaCorta(iso) {
-  const d = new Date(iso + 'T00:00:00');
-  return DIA_CORTO[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
-}
-
-function porcentajeAbono(cancha) {
-  return cancha && cancha.reglas ? Number(cancha.reglas.porcentajeAbono || 0) : 0;
-}
-
-function abonoDe(cancha, total) {
-  return Math.round(Number(total) * porcentajeAbono(cancha) / 100);
-}
-
-function celda(texto) {
-  const td = document.createElement('td');
-  td.textContent = texto;
-  return td;
-}
-
-function boton(texto, clase, accion) {
-  const b = document.createElement('button');
-  b.textContent = texto;
-  b.className = clase;
-  b.addEventListener('click', accion);
-  return b;
-}
-
-// Deja solo los dígitos; si escriben +57 al inicio se quita
-function limpiarCelular(texto) {
-  let c = String(texto || '').replace(/\D/g, '');
-  if (c.length === 12 && c.startsWith('57')) c = c.substring(2);
-  return c;
 }
 
 // ---------- navegación y sesión ----------
@@ -151,27 +30,12 @@ function mostrar(vista) {
   document.getElementById('portada').classList.toggle('oculto', vista !== 'reservar');
   if (vista === 'reservar') cargarCanchas();
   if (vista === 'mias') cargarMias();
-  if (vista === 'admin') cargarAdmin();
   window.scrollTo(0, 0);
 }
 
 function pintarSesion() {
   document.getElementById('quien').textContent = sesion ? sesion.nombre : '';
   document.querySelectorAll('.solo-sesion').forEach(e => e.classList.toggle('oculto', !sesion));
-  document.querySelectorAll('.sin-sesion').forEach(e => e.classList.toggle('oculto', !!sesion));
-  document.querySelectorAll('.solo-admin').forEach(e => e.classList.toggle('oculto', !esAdmin()));
-}
-
-// Solo el personal (administrador o propietario) entra con correo y contraseña
-async function ingresar(ev) {
-  ev.preventDefault();
-  const f = new FormData(ev.target);
-  try {
-    const r = await api('POST', '/auth/login', { email: f.get('email'), password: f.get('password') });
-    guardarSesion(r);
-    avisar('Bienvenido, ' + r.nombre);
-    mostrar(esAdmin() ? 'admin' : 'mias');
-  } catch (e) { avisar(e.message, 'error'); }
 }
 
 function salir() {
@@ -400,8 +264,8 @@ async function reservar() {
     const r = await api('POST', '/reservas/rapida', cuerpo);
     guardar('cliente', { nombre, celular });
     if (r.whatsapp) guardar('whatsapp', r.whatsapp);
-    // El personal conserva su sesión; el jugador queda con la suya para ver «Mis reservas»
-    if (!esAdmin()) guardarSesion(r.sesion);
+    // El jugador queda con su sesión para ver «Mis reservas»
+    guardarSesion(r.sesion);
     mostrarListo(r.reserva);
   } catch (e) {
     avisar(e.message, 'error');
@@ -494,18 +358,18 @@ function tarjetaReserva(r) {
     wa.textContent = 'WhatsApp';
     pintarWhatsapp(wa, r);
     acc.appendChild(wa);
-    acc.appendChild(boton('Cancelar', 'mini sec-peligro', () => cancelarReserva(r.id, false)));
+    acc.appendChild(boton('Cancelar', 'mini sec-peligro', () => cancelarReserva(r.id)));
   }
   return div;
 }
 
 // Cancelación lógica: la consumidora llama a PATCH /api/reservas/{id}/estado del Proveedor 2
-async function cancelarReserva(id, desdeAdmin) {
+async function cancelarReserva(id) {
   if (!confirmarEnLinea('¿Cancelar la reserva #' + id + '?')) return;
   try {
     await api('POST', `/reservas/${id}/cancelar`);
     avisar('Reserva #' + id + ' cancelada. La hora quedó libre.');
-    if (desdeAdmin) cargarAdminReservas(); else cargarMias();
+    cargarMias();
   } catch (e) { avisar(e.message, 'error'); }
 }
 
@@ -559,203 +423,17 @@ async function confirmarPago(reservaId, transaccion) {
   mostrar('mias');
 }
 
-// Pide confirmación con el mismo botón (segundo clic) para no usar ventanas emergentes
-function confirmarEnLinea(pregunta) {
-  const ahora = Date.now();
-  if (confirmarEnLinea.ultima === pregunta && ahora - confirmarEnLinea.t < 4000) {
-    confirmarEnLinea.ultima = null;
-    return true;
-  }
-  confirmarEnLinea.ultima = pregunta;
-  confirmarEnLinea.t = ahora;
-  avisar(pregunta + ' Pulsa otra vez para confirmar.', 'error');
-  return false;
-}
-
-// ---------- administración ----------
-
-async function cargarAdmin() {
-  try {
-    canchas = await api('GET', '/canchas');
-  } catch (e) { avisar(e.message, 'error'); canchas = []; }
-  pintarAdminCanchas();
-  const sel = document.getElementById('horarioCancha');
-  const actual = sel.value;
-  sel.innerHTML = canchas.map(c => `<option value="${c.id}">${c.id} · ${c.nombre}</option>`).join('');
-  if (canchas.some(c => String(c.id) === actual)) sel.value = actual;
-  cargarHorarios();
-  cargarAdminReservas();
-}
-
-function pintarAdminCanchas() {
-  const tbody = document.getElementById('tablaAdminCanchas');
-  tbody.innerHTML = '';
-  canchas.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.appendChild(celda(c.id));
-    tr.appendChild(celda(c.nombre));
-    tr.appendChild(celda(pesos(c.precioHora)));
-    tr.appendChild(celda(porcentajeAbono(c) > 0 ? porcentajeAbono(c) + ' %' : 'Sin abono'));
-    const acc = document.createElement('td');
-    acc.appendChild(boton('Editar', 'mini sec', () => editarCancha(c)));
-    acc.appendChild(document.createTextNode(' '));
-    acc.appendChild(boton('Dar de baja', 'mini peligro', () => darDeBaja(c)));
-    tr.appendChild(acc);
-    tbody.appendChild(tr);
-  });
-}
-
-function editarCancha(c) {
-  const f = document.getElementById('formCancha');
-  f.id.value = c.id;
-  f.nombre.value = c.nombre;
-  f.tipo.value = c.tipo || '';
-  f.superficie.value = c.superficie || '';
-  f.precioHora.value = c.precioHora;
-  document.getElementById('tituloFormCancha').textContent = 'Editar cancha #' + c.id;
-  document.getElementById('btnCancelarEdicion').classList.remove('oculto');
-}
-
-function limpiarFormCancha() {
-  const f = document.getElementById('formCancha');
-  f.reset();
-  f.id.value = '';
-  document.getElementById('tituloFormCancha').textContent = 'Nueva cancha';
-  document.getElementById('btnCancelarEdicion').classList.add('oculto');
-}
-
-// Crear (POST) o actualizar (PUT) una cancha en el Proveedor 1, con el JWT del administrador
-async function guardarCancha(ev) {
-  ev.preventDefault();
-  const f = ev.target;
-  const tipo = f.tipo.value;
-  const cuerpo = {
-    establecimientoId: 1,
-    nombre: f.nombre.value,
-    deporte: /v[oó]ley/i.test(tipo) ? 'VOLEY' : 'FUTBOL',
-    tipo,
-    superficie: f.superficie.value,
-    ubicacion: 'Villavicencio',
-    precioHora: Number(f.precioHora.value),
-    activa: true
-  };
-  try {
-    if (f.id.value) {
-      await api('PUT', '/canchas/' + f.id.value, cuerpo);
-      avisar('Cancha actualizada.');
-    } else {
-      const c = await api('POST', '/canchas', cuerpo);
-      avisar('Cancha #' + c.id + ' creada.');
-    }
-    limpiarFormCancha();
-    cargarAdmin();
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
-// Baja lógica: PUT con activa=false; la cancha deja de listarse pero sus reservas se conservan
-async function darDeBaja(c) {
-  if (!confirmarEnLinea('¿Dar de baja «' + c.nombre + '»?')) return;
-  try {
-    await api('PUT', '/canchas/' + c.id, {
-      nombre: c.nombre, tipo: c.tipo, superficie: c.superficie, ubicacion: c.ubicacion,
-      precioHora: c.precioHora, activa: false
-    });
-    avisar('«' + c.nombre + '» quedó inactiva.');
-    cargarAdmin();
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
-async function cargarHorarios() {
-  const id = document.getElementById('horarioCancha').value;
-  const tbody = document.getElementById('tablaHorarios');
-  tbody.innerHTML = '';
-  if (!id) return;
-  try {
-    const lista = await api('GET', '/horarios/cancha/' + id);
-    lista.forEach(h => {
-      const tr = document.createElement('tr');
-      tr.appendChild(celda(h.id));
-      tr.appendChild(celda(DIAS[h.diaSemana] || h.diaSemana));
-      tr.appendChild(celda(horaBonita(h.horaApertura)));
-      tr.appendChild(celda(horaBonita(h.horaCierre)));
-      const acc = document.createElement('td');
-      acc.appendChild(boton('Eliminar', 'mini peligro', () => eliminarHorario(h.id)));
-      tr.appendChild(acc);
-      tbody.appendChild(tr);
-    });
-    if (!lista.length) tbody.innerHTML = '<tr><td colspan="5" class="nota">Sin horarios: la cancha no abre.</td></tr>';
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
-async function agregarHorario(ev) {
-  ev.preventDefault();
-  const f = ev.target;
-  try {
-    await api('POST', '/horarios', {
-      canchaId: Number(document.getElementById('horarioCancha').value),
-      diaSemana: f.diaSemana.value,
-      horaApertura: f.horaApertura.value,
-      horaCierre: f.horaCierre.value
-    });
-    avisar('Horario agregado.');
-    cargarHorarios();
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
-// DELETE /api/horarios/{id}: el Proveedor 1 lo desactiva y deja de contar para las franjas
-async function eliminarHorario(id) {
-  if (!confirmarEnLinea('¿Eliminar el horario #' + id + '?')) return;
-  try {
-    await api('DELETE', '/horarios/' + id);
-    avisar('Horario #' + id + ' eliminado.');
-    cargarHorarios();
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
-async function cargarAdminReservas() {
-  const tbody = document.getElementById('tablaAdminReservas');
-  tbody.innerHTML = '';
-  try {
-    const lista = await api('GET', '/admin/reservas');
-    lista.sort((a, b) => b.id - a.id);
-    lista.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.appendChild(celda(r.id));
-      tr.appendChild(celda(r.usuario ? r.usuario.nombre : ''));
-      tr.appendChild(celda(r.usuario && r.usuario.celular ? r.usuario.celular : '—'));
-      tr.appendChild(celda(r.cancha ? r.cancha.nombre : ''));
-      tr.appendChild(celda(fechaCorta(r.fecha)));
-      tr.appendChild(celda(rangoBonito(r.horaInicio, r.horaFin)));
-      const est = document.createElement('td');
-      est.innerHTML = `<span class="estado ${r.estado}"></span>`;
-      est.firstChild.textContent = ESTADOS[r.estado] || r.estado;
-      tr.appendChild(est);
-      const acc = document.createElement('td');
-      if (r.estado !== 'CANCELADA') acc.appendChild(boton('Cancelar', 'mini peligro', () => cancelarReserva(r.id, true)));
-      tr.appendChild(acc);
-      tbody.appendChild(tr);
-    });
-    if (!lista.length) tbody.innerHTML = '<tr><td colspan="8" class="nota">No hay reservas.</td></tr>';
-  } catch (e) { avisar(e.message, 'error'); }
-}
-
 // ---------- arranque ----------
 
 document.querySelectorAll('#menu button').forEach(b => b.addEventListener('click', () => mostrar(b.dataset.vista)));
 document.getElementById('marca').addEventListener('click', () => mostrar('reservar'));
-document.getElementById('btnPersonal').addEventListener('click', () => mostrar('login'));
 document.getElementById('btnSalir').addEventListener('click', salir);
-document.getElementById('formLogin').addEventListener('submit', ingresar);
 document.querySelectorAll('#duracion button').forEach(b => b.addEventListener('click', () => elegirDuracion(b)));
 document.getElementById('btnReservar').addEventListener('click', reservar);
 document.getElementById('formDatos').addEventListener('submit', ev => { ev.preventDefault(); reservar(); });
 document.getElementById('btnListoPagar').addEventListener('click', () => pagarReserva(ultimaReserva.id));
 document.getElementById('btnListoMias').addEventListener('click', () => mostrar('mias'));
 document.getElementById('btnListoOtra').addEventListener('click', () => mostrar('reservar'));
-document.getElementById('formCancha').addEventListener('submit', guardarCancha);
-document.getElementById('btnCancelarEdicion').addEventListener('click', limpiarFormCancha);
-document.getElementById('horarioCancha').addEventListener('change', cargarHorarios);
-document.getElementById('formHorario').addEventListener('submit', agregarHorario);
 
 // Nombre y celular de la última reserva en este celular
 const cliente = leer('cliente');
@@ -764,16 +442,8 @@ if (cliente) {
   document.getElementById('formDatos').celular.value = cliente.celular || '';
 }
 
+// Si en este navegador quedó guardada una sesión del personal (versión anterior), no se usa aquí
+if (sesion && sesion.rol !== 'JUGADOR') guardarSesion(null);
+
 pintarSesion();
 mostrar('reservar');
-
-// En el celular cada fila de una tabla se muestra como tarjeta: cada celda lleva el nombre de su columna
-function etiquetarCeldas(tabla) {
-  const titulos = [...tabla.querySelectorAll('thead th')].map(th => th.textContent);
-  tabla.querySelectorAll('tbody tr').forEach(tr =>
-    [...tr.children].forEach((td, i) => { if (!td.hasAttribute('colspan')) td.dataset.label = titulos[i] || ''; }));
-}
-document.querySelectorAll('table.tabla').forEach(tabla => {
-  etiquetarCeldas(tabla);
-  new MutationObserver(() => etiquetarCeldas(tabla)).observe(tabla.tBodies[0], { childList: true });
-});

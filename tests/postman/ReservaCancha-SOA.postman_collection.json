@@ -2637,6 +2637,693 @@
           }
         }
       ]
+    },
+    {
+      "name": "6 · Personal: empleados y administrador",
+      "description": "Registro abierto solo para jugadores; el administrador crea y desactiva empleados; el empleado ve la agenda pero no las métricas ni las canchas.",
+      "item": [
+        {
+          "name": "Login administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tokenAdmin', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@reservacancha.co\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registrarse como PROPIETARIO → 403 (el registro es solo para jugadores)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('no entrega token', () => pm.expect(pm.response.text()).to.not.include('token'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/register",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intruso\",\n  \"email\": \"intruso{{$timestamp}}@correo.co\",\n  \"password\": \"intruso123\",\n  \"rol\": \"PROPIETARIO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registrarse como EMPLEADO → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/register",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intruso\",\n  \"email\": \"intruso2{{$timestamp}}@correo.co\",\n  \"password\": \"intruso123\",\n  \"rol\": \"EMPLEADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "El administrador crea un empleado → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('rol EMPLEADO y activo, sin contraseña', () => { pm.expect(j.rol).to.eql('EMPLEADO'); pm.expect(j.activo).to.eql(true); pm.expect(j).to.not.have.property('password'); });",
+                  "pm.environment.set('empleadoId', j.id);",
+                  "pm.environment.set('empleadoEmail', j.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/empleados",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "empleados"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleado Postman\",\n  \"email\": \"empleado{{$timestamp}}@monaco.co\",\n  \"password\": \"turno-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "El mismo correo otra vez → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/empleados",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "empleados"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleado Postman\",\n  \"email\": \"{{empleadoEmail}}\",\n  \"password\": \"turno-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login del empleado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('rol EMPLEADO y token', () => { pm.expect(j.rol).to.eql('EMPLEADO'); pm.expect(j.token).to.be.a('string').and.not.empty; });",
+                  "pm.environment.set('tokenEmpleado', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{empleadoEmail}}\",\n  \"password\": \"turno-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "El empleado ve la agenda (todas las reservas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('lista de reservas', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEmpleado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/reservas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reservas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "El empleado pide las métricas → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEmpleado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/metricas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "metricas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "El empleado intenta crear un empleado → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEmpleado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/empleados",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "empleados"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Otro\",\n  \"email\": \"otro{{$timestamp}}@monaco.co\",\n  \"password\": \"turno-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "El empleado intenta crear una cancha → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEmpleado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/canchas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "canchas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"No debe quedar\",\n  \"tipo\": \"Fútbol 5\",\n  \"superficie\": \"Sintética\",\n  \"ubicacion\": \"Villavicencio\",\n  \"precioHora\": 50000,\n  \"activa\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "El administrador ve las métricas de la semana",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('cifras, ocupación por cancha y por hora', () => { ['reservas','canceladas','ingresos','porCancha','porDia','porHora'].forEach(k => pm.expect(j).to.have.property(k)); pm.expect(j.porCancha).to.be.an('array').and.not.empty; });",
+                  "pm.test('ocupación entre 0 y 100', () => j.porCancha.forEach(c => pm.expect(c.ocupacion).to.be.within(0, 100)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/metricas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "metricas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Métricas con un rango al revés → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/metricas?desde=2026-12-10&hasta=2026-12-01",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "metricas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-12-10"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-12-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "El administrador lista el personal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test('aparece el empleado nuevo', () => pm.expect(lista.map(u => u.email)).to.include(pm.environment.get('empleadoEmail')));",
+                  "pm.test('no aparecen jugadores', () => lista.forEach(u => pm.expect(u.rol).to.not.eql('JUGADOR')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/empleados",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "empleados"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desactivar al empleado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda inactivo', () => pm.expect(pm.response.json().activo).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/empleados/{{empleadoId}}",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "empleados",
+                "{{empleadoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Empleado desactivado intenta entrar → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/auth/login",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{empleadoEmail}}\",\n  \"password\": \"turno-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Su token anterior ya no sirve → 401/403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 o 403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEmpleado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{consumidora}}/api/admin/reservas",
+              "host": [
+                "{{consumidora}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reservas"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

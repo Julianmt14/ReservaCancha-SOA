@@ -14,12 +14,10 @@
   <nav id="menu">
     <button data-vista="reservar" class="activo solo-sesion">Reservar</button>
     <button data-vista="mias" class="solo-sesion">Mis reservas</button>
-    <button data-vista="admin" class="solo-admin">Administrar</button>
   </nav>
   <div id="sesion">
     <span id="quien"></span>
     <button id="btnSalir" class="enlace solo-sesion">Salir</button>
-    <button id="btnPersonal" class="enlace sin-sesion">Personal</button>
   </div>
 </header>
 
@@ -103,77 +101,13 @@
     <div id="listaMias"></div>
     <p class="nota">El abono se paga con Wompi en modo de pruebas (sandbox): no se cobra dinero real.</p>
   </section>
-
-  <!-- Ingreso del personal (administrador o propietario) -->
-  <section id="vista-login" class="vista angosta oculto">
-    <form id="formLogin" class="tarjeta">
-      <h2>Ingreso del personal</h2>
-      <p class="nota">Los jugadores no necesitan cuenta: reservan con nombre y celular.</p>
-      <label>Correo <input name="email" type="email" required value="admin@reservacancha.co"></label>
-      <label>Contraseña <input name="password" type="password" required value="admin123"></label>
-      <button class="grande">Ingresar</button>
-    </form>
-  </section>
-
-  <!-- Administración: CRUD de canchas y horarios, todas las reservas -->
-  <section id="vista-admin" class="vista oculto">
-    <h2>Administrar</h2>
-    <div class="dos">
-      <form id="formCancha" class="tarjeta">
-        <h3 id="tituloFormCancha">Nueva cancha</h3>
-        <input type="hidden" name="id">
-        <label>Nombre <input name="nombre" required></label>
-        <label>Tipo <input name="tipo" placeholder="Fútbol 5" required></label>
-        <label>Superficie <input name="superficie" value="Sintética"></label>
-        <label>Precio por hora <input name="precioHora" type="number" min="0" step="1000" required></label>
-        <div class="fila">
-          <button>Guardar</button>
-          <button type="button" id="btnCancelarEdicion" class="sec oculto">Cancelar edición</button>
-        </div>
-      </form>
-      <div class="tarjeta">
-        <h3>Canchas activas</h3>
-        <table class="tabla">
-          <thead><tr><th>#</th><th>Nombre</th><th>Precio</th><th>Abono</th><th></th></tr></thead>
-          <tbody id="tablaAdminCanchas"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="tarjeta">
-      <h3>Horarios</h3>
-      <div class="fila">
-        <label>Cancha <select id="horarioCancha"></select></label>
-      </div>
-      <table class="tabla">
-        <thead><tr><th>#</th><th>Día</th><th>Abre</th><th>Cierra</th><th></th></tr></thead>
-        <tbody id="tablaHorarios"></tbody>
-      </table>
-      <form id="formHorario" class="fila">
-        <label>Día
-          <select name="diaSemana">
-            <option value="MONDAY">Lunes</option><option value="TUESDAY">Martes</option>
-            <option value="WEDNESDAY">Miércoles</option><option value="THURSDAY">Jueves</option>
-            <option value="FRIDAY">Viernes</option><option value="SATURDAY">Sábado</option>
-            <option value="SUNDAY">Domingo</option>
-          </select>
-        </label>
-        <label>Abre <input name="horaApertura" type="time" value="14:00" required></label>
-        <label>Cierra <input name="horaCierre" type="time" value="22:00" required></label>
-        <button>Agregar horario</button>
-      </form>
-    </div>
-
-    <div class="tarjeta">
-      <h3>Todas las reservas</h3>
-      <table class="tabla">
-        <thead><tr><th>#</th><th>Jugador</th><th>Celular</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
-        <tbody id="tablaAdminReservas"></tbody>
-      </table>
-    </div>
-  </section>
 </main>
 
+<footer class="pie">
+  Canchas Mónaco · Villavicencio · <a href="/panel">¿Trabajas aquí? Panel del personal</a>
+</footer>
+
+<script src="js/comun.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

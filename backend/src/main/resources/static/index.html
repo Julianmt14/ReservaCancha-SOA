@@ -3,84 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b4a40">
   <title>ReservaCancha</title>
   <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
 <!-- Interfaz web de la consumidora: HTML, CSS y JavaScript con fetch a /api (puerto 8080) -->
 <header class="barra">
-  <div class="marca">reserva<b>cancha</b></div>
+  <div class="marca" id="marca">reserva<b>cancha</b></div>
   <nav id="menu">
-    <button data-vista="canchas" class="activo">Canchas</button>
+    <button data-vista="reservar" class="activo solo-sesion">Reservar</button>
     <button data-vista="mias" class="solo-sesion">Mis reservas</button>
     <button data-vista="admin" class="solo-admin">Administrar</button>
   </nav>
   <div id="sesion">
     <span id="quien"></span>
-    <button id="btnSalir" class="sec solo-sesion">Salir</button>
-    <button id="btnIngresar" class="sin-sesion">Ingresar</button>
+    <button id="btnSalir" class="enlace solo-sesion">Salir</button>
+    <button id="btnPersonal" class="enlace sin-sesion">Personal</button>
   </div>
 </header>
 
 <div id="aviso" class="aviso oculto"></div>
 
+<!-- Portada: el complejo que usa la app (Canchas Mónaco) -->
+<section id="portada" class="portada">
+  <div class="portada-contenido">
+    <img src="img/monaco.png" alt="Logo de Canchas Mónaco" class="logo">
+    <div>
+      <p class="sobre">Reserva en línea</p>
+      <h1>Canchas Mónaco</h1>
+      <p class="deportes">Vóley playa · Fútbol 7 · Fútbol 9</p>
+      <p class="lugar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        Villavicencio, Meta · todos los días de 2:00 p. m. a 10:00 p. m.
+      </p>
+      <div class="enlaces">
+        <a href="https://www.google.com/maps/search/?api=1&amp;query=Canchas+Monaco+Villavicencio" target="_blank" rel="noopener">Cómo llegar</a>
+        <a href="https://www.instagram.com/monacovillavicencio/" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <main>
-  <!-- Ingresar / registrarse -->
-  <section id="vista-login" class="vista oculto">
-    <div class="dos">
-      <form id="formLogin" class="tarjeta">
-        <h2>Ingresar</h2>
-        <label>Correo <input name="email" type="email" required value="jugador@reservacancha.co"></label>
-        <label>Contraseña <input name="password" type="password" required value="jugador123"></label>
-        <button>Ingresar</button>
-        <p class="nota">Pruebas: jugador@reservacancha.co / jugador123 · admin@reservacancha.co / admin123</p>
-      </form>
-      <form id="formRegistro" class="tarjeta">
-        <h2>Crear cuenta de jugador</h2>
-        <label>Nombre <input name="nombre" required></label>
-        <label>Correo <input name="email" type="email" required></label>
-        <label>Contraseña (mínimo 8) <input name="password" type="password" required></label>
-        <button>Registrarme</button>
-      </form>
+  <!-- Reservar: cancha, día, hora y datos en una sola pantalla (sin crear cuenta) -->
+  <section id="vista-reservar" class="vista angosta">
+    <h2 class="titulo">Reserva tu cancha</h2>
+    <p class="nota">Sin crear cuenta: solo tu nombre y tu celular.</p>
+
+    <div class="paso"><span>1</span> Cancha</div>
+    <div id="carrilCanchas" class="carril"></div>
+
+    <div class="paso"><span>2</span> Día</div>
+    <div id="dias" class="chips"></div>
+
+    <div class="paso"><span>3</span> Hora</div>
+    <div class="segmento" id="duracion">
+      <button data-min="60" class="activo">1 hora</button>
+      <button data-min="90">1 h 30</button>
+      <button data-min="120">2 horas</button>
+    </div>
+    <div id="horas" class="horas"></div>
+    <p class="nota">Las horas tachadas ya están reservadas.</p>
+
+    <div class="paso"><span>4</span> Tus datos</div>
+    <form id="formDatos" class="datos" novalidate>
+      <label>Nombre <input name="nombre" maxlength="60" autocomplete="name" placeholder="Ej. Julián Mejía"></label>
+      <label>Celular <input name="celular" type="tel" inputmode="numeric" autocomplete="tel" placeholder="300 123 4567"></label>
+    </form>
+
+    <div class="fijo">
+      <div class="resumen">
+        <div><b id="resumenTexto">Elige cancha, día y hora</b><small id="resumenAbono"></small></div>
+        <strong id="resumenPrecio"></strong>
+      </div>
+      <button id="btnReservar" class="grande" disabled>Reservar</button>
     </div>
   </section>
 
-  <!-- Canchas y disponibilidad (Proveedor 1 + Proveedor 2) -->
-  <section id="vista-canchas" class="vista">
-    <h2>Canchas del complejo</h2>
-    <div class="filtros">
-      <label>Tipo
-        <select id="filtroTipo"><option value="">Todas</option></select>
-      </label>
-      <label>Fecha <input id="fecha" type="date"></label>
-    </div>
-    <div id="listaCanchas" class="rejilla"></div>
-
-    <div id="panelDisponibilidad" class="tarjeta oculto">
-      <h3 id="tituloDisponibilidad"></h3>
-      <p class="nota">Elige la hora de inicio y la duración. Las horas ocupadas no aparecen.</p>
-      <div id="franjas" class="franjas"></div>
-      <div class="fila">
-        <label>Duración
-          <select id="duracion">
-            <option value="60">1 hora</option>
-            <option value="90">1 h 30</option>
-            <option value="120">2 horas</option>
-          </select>
-        </label>
-        <button id="btnReservar" disabled>Reservar</button>
+  <!-- Reserva lista: pagar el abono (si la cancha lo pide) y confirmar por WhatsApp -->
+  <section id="vista-listo" class="vista angosta oculto">
+    <div class="tarjeta listo">
+      <div class="chulo">✓</div>
+      <h1 class="titulo">¡Reserva lista!</h1>
+      <p id="listoNumero" class="nota"></p>
+      <dl id="listoDetalle" class="detalle"></dl>
+      <p id="listoPago" class="pago"></p>
+      <div class="acciones">
+        <button id="btnListoPagar" class="grande">Pagar abono</button>
+        <a id="btnListoWhatsapp" class="boton grande whatsapp oculto" target="_blank" rel="noopener">Confirmar por WhatsApp</a>
+        <button id="btnListoMias" class="grande sec">Ver mis reservas</button>
+        <button id="btnListoOtra" class="enlace">Hacer otra reserva</button>
       </div>
     </div>
   </section>
 
   <!-- Mis reservas (Proveedor 2) -->
-  <section id="vista-mias" class="vista oculto">
-    <h2>Mis reservas</h2>
-    <table class="tabla">
-      <thead><tr><th>#</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="tablaMias"></tbody>
-    </table>
-    <p class="nota">El botón Pagar abre Wompi en modo de pruebas (sandbox): no se cobra dinero real.</p>
+  <section id="vista-mias" class="vista angosta oculto">
+    <h1 class="titulo">Mis reservas</h1>
+    <div id="listaMias"></div>
+    <p class="nota">El abono se paga con Wompi en modo de pruebas (sandbox): no se cobra dinero real.</p>
+  </section>
+
+  <!-- Ingreso del personal (administrador o propietario) -->
+  <section id="vista-login" class="vista angosta oculto">
+    <form id="formLogin" class="tarjeta">
+      <h2>Ingreso del personal</h2>
+      <p class="nota">Los jugadores no necesitan cuenta: reservan con nombre y celular.</p>
+      <label>Correo <input name="email" type="email" required value="admin@reservacancha.co"></label>
+      <label>Contraseña <input name="password" type="password" required value="admin123"></label>
+      <button class="grande">Ingresar</button>
+    </form>
   </section>
 
   <!-- Administración: CRUD de canchas y horarios, todas las reservas -->
@@ -102,7 +135,7 @@
       <div class="tarjeta">
         <h3>Canchas activas</h3>
         <table class="tabla">
-          <thead><tr><th>#</th><th>Nombre</th><th>Precio</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Nombre</th><th>Precio</th><th>Abono</th><th></th></tr></thead>
           <tbody id="tablaAdminCanchas"></tbody>
         </table>
       </div>
@@ -126,7 +159,7 @@
             <option value="SUNDAY">Domingo</option>
           </select>
         </label>
-        <label>Abre <input name="horaApertura" type="time" value="06:00" required></label>
+        <label>Abre <input name="horaApertura" type="time" value="14:00" required></label>
         <label>Cierra <input name="horaCierre" type="time" value="22:00" required></label>
         <button>Agregar horario</button>
       </form>
@@ -135,7 +168,7 @@
     <div class="tarjeta">
       <h3>Todas las reservas</h3>
       <table class="tabla">
-        <thead><tr><th>#</th><th>Jugador</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Jugador</th><th>Celular</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tablaAdminReservas"></tbody>
       </table>
     </div>

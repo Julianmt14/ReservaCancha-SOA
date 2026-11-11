@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b4a40">
+  <title>Panel del personal · ReservaCancha</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="panel">
+<!-- Panel del personal de Canchas Mónaco: empleados y administrador inician sesión aquí -->
+<header class="barra">
+  <div class="marca">reserva<b>cancha</b> <span class="sello">Panel</span></div>
+  <nav id="menu">
+    <button data-vista="agenda" class="solo-personal">Agenda</button>
+    <button data-vista="telefono" class="solo-personal">Reserva por teléfono</button>
+    <button data-vista="metricas" class="solo-admin">Métricas</button>
+    <button data-vista="canchas" class="solo-admin">Canchas y horarios</button>
+    <button data-vista="empleados" class="solo-admin">Empleados</button>
+  </nav>
+  <div id="sesion">
+    <span id="quien"></span>
+    <span id="rol" class="rol"></span>
+    <button id="btnSalir" class="enlace solo-personal">Salir</button>
+  </div>
+</header>
+
+<div id="aviso" class="aviso oculto"></div>
+
+<main>
+  <!-- Ingreso del personal -->
+  <section id="vista-login" class="vista angosta">
+    <form id="formLogin" class="tarjeta ingreso">
+      <h2>Ingreso del personal</h2>
+      <p class="nota">Para quienes trabajan en Canchas Mónaco. Los jugadores no necesitan cuenta:
+        reservan en <a href="/">la página pública</a> con su nombre y su celular.</p>
+      <label>Correo <input name="email" type="email" autocomplete="username" required></label>
+      <label>Contraseña <input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="grande">Ingresar</button>
+      <p class="nota">Las cuentas de los empleados las crea el administrador.</p>
+    </form>
+  </section>
+
+  <!-- Agenda del día: empleados y administrador -->
+  <section id="vista-agenda" class="vista oculto">
+    <div class="cabeza-vista">
+      <h2>Agenda</h2>
+      <div class="fila">
+        <button type="button" id="diaAntes" class="sec mini" aria-label="Día anterior">◀</button>
+        <button type="button" id="diaHoy" class="sec mini">Hoy</button>
+        <button type="button" id="diaDespues" class="sec mini" aria-label="Día siguiente">▶</button>
+        <input type="date" id="agendaFecha">
+      </div>
+    </div>
+    <p id="agendaTitulo" class="nota"></p>
+    <div id="agendaCifras" class="cifras"></div>
+    <div class="tarjeta desliza"><div id="agendaGrilla" class="grilla"></div></div>
+
+    <div class="tarjeta">
+      <div class="cabeza-vista">
+        <h3>Próximas reservas</h3>
+        <input id="buscar" placeholder="Nombre, celular o #reserva">
+      </div>
+      <table class="tabla">
+        <thead><tr><th>#</th><th>Jugador</th><th>Celular</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Pago</th><th></th></tr></thead>
+        <tbody id="tablaReservas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Reserva que llega por teléfono o WhatsApp -->
+  <section id="vista-telefono" class="vista angosta oculto">
+    <h2>Reserva por teléfono</h2>
+    <p class="nota">Para cuando un jugador llama o escribe por WhatsApp. Queda igual que si reservara
+      en la página: con su nombre y su celular, y con las mismas reglas.</p>
+    <form id="formTelefono" class="tarjeta">
+      <label>Cancha <select name="cancha" required></select></label>
+      <div class="dos">
+        <label>Día <input name="fecha" type="date" required></label>
+        <label>Hora
+          <select name="hora" required>
+            <option value="14">2:00 p. m.</option><option value="15">3:00 p. m.</option>
+            <option value="16">4:00 p. m.</option><option value="17">5:00 p. m.</option>
+            <option value="18">6:00 p. m.</option><option value="19">7:00 p. m.</option>
+            <option value="20">8:00 p. m.</option><option value="21">9:00 p. m.</option>
+          </select>
+        </label>
+      </div>
+      <div class="segmento" id="telDuracion">
+        <button type="button" data-horas="1" class="activo">1 hora</button>
+        <button type="button" data-horas="2">2 horas</button>
+      </div>
+      <div class="dos">
+        <label>Nombre del jugador <input name="nombre" maxlength="60" required></label>
+        <label>Celular <input name="celular" type="tel" inputmode="numeric" placeholder="300 123 4567" required></label>
+      </div>
+      <p id="telResumen" class="nota"></p>
+      <button class="grande">Reservar</button>
+    </form>
+    <div id="telListo" class="tarjeta oculto"></div>
+  </section>
+
+  <!-- Métricas: solo el administrador -->
+  <section id="vista-metricas" class="vista oculto">
+    <div class="cabeza-vista">
+      <h2>Métricas</h2>
+      <form id="formRango" class="fila">
+        <label>Desde <input type="date" name="desde" required></label>
+        <label>Hasta <input type="date" name="hasta" required></label>
+        <button>Ver</button>
+        <button type="button" class="sec" data-rango="semana">Esta semana</button>
+        <button type="button" class="sec" data-rango="mes">Últimos 30 días</button>
+      </form>
+    </div>
+    <div id="kpis" class="kpis"></div>
+    <div class="dos">
+      <div class="tarjeta"><h3>Ocupación por cancha</h3><div id="graficaCanchas"></div>
+        <p class="nota">Horas reservadas sobre las horas que abre cada cancha en el rango.</p></div>
+      <div class="tarjeta"><h3>Horas más pedidas</h3><div id="graficaHoras"></div></div>
+    </div>
+    <div class="tarjeta"><h3>Reservas por día</h3><div id="graficaDias" class="columnas"></div></div>
+  </section>
+
+  <!-- Canchas y horarios (Proveedor 1): solo el administrador -->
+  <section id="vista-canchas" class="vista oculto">
+    <h2>Canchas y horarios</h2>
+    <div class="dos">
+      <form id="formCancha" class="tarjeta">
+        <h3 id="tituloFormCancha">Nueva cancha</h3>
+        <input type="hidden" name="id">
+        <label>Nombre <input name="nombre" required></label>
+        <label>Tipo <input name="tipo" placeholder="Fútbol 5" required></label>
+        <label>Superficie <input name="superficie" value="Sintética"></label>
+        <label>Precio por hora <input name="precioHora" type="number" min="0" step="1000" required></label>
+        <div class="fila">
+          <button>Guardar</button>
+          <button type="button" id="btnCancelarEdicion" class="sec oculto">Cancelar edición</button>
+        </div>
+      </form>
+      <div class="tarjeta">
+        <h3>Canchas activas</h3>
+        <table class="tabla">
+          <thead><tr><th>#</th><th>Nombre</th><th>Precio</th><th>Abono</th><th></th></tr></thead>
+          <tbody id="tablaAdminCanchas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h3>Horarios</h3>
+      <div class="fila">
+        <label>Cancha <select id="horarioCancha"></select></label>
+      </div>
+      <table class="tabla">
+        <thead><tr><th>#</th><th>Día</th><th>Abre</th><th>Cierra</th><th></th></tr></thead>
+        <tbody id="tablaHorarios"></tbody>
+      </table>
+      <form id="formHorario" class="fila">
+        <label>Día
+          <select name="diaSemana">
+            <option value="MONDAY">Lunes</option><option value="TUESDAY">Martes</option>
+            <option value="WEDNESDAY">Miércoles</option><option value="THURSDAY">Jueves</option>
+            <option value="FRIDAY">Viernes</option><option value="SATURDAY">Sábado</option>
+            <option value="SUNDAY">Domingo</option>
+          </select>
+        </label>
+        <label>Abre <input name="horaApertura" type="time" value="14:00" required></label>
+        <label>Cierra <input name="horaCierre" type="time" value="22:00" required></label>
+        <button>Agregar horario</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Empleados: el administrador crea y desactiva cuentas -->
+  <section id="vista-empleados" class="vista oculto">
+    <h2>Empleados</h2>
+    <div class="dos">
+      <form id="formEmpleado" class="tarjeta">
+        <h3>Nuevo empleado</h3>
+        <label>Nombre <input name="nombre" maxlength="60" required></label>
+        <label>Correo <input name="email" type="email" required></label>
+        <label>Contraseña inicial <input name="password" type="password" minlength="8" required></label>
+        <button>Crear cuenta</button>
+        <p class="nota">El empleado ve la agenda, registra reservas por teléfono y cancela.
+          No ve métricas ni cambia canchas.</p>
+      </form>
+      <div class="tarjeta">
+        <h3>Personal</h3>
+        <table class="tabla">
+          <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tablaEmpleados"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="js/comun.js"></script>
+<script src="js/panel.js"></script>
+</body>
+</html>

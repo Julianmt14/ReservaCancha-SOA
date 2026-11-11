@@ -252,3 +252,64 @@ td button.mini + button.mini { margin-left: 6px; }
 @media (max-width: 380px) {
   .horas { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ---------- pie de la página pública ---------- */
+.pie { text-align: center; font-size: 13px; color: var(--texto-2); padding: 18px 16px 26px; }
+.pie a { color: var(--botella); font-weight: 600; }
+
+/* ---------- panel del personal (/panel) ---------- */
+.sello { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  background: var(--menta); color: var(--botella); border-radius: 6px; padding: 2px 7px; vertical-align: middle; }
+.rol { font-size: 12px; font-weight: 700; color: var(--botella); background: var(--menta); border-radius: 99px; padding: 2px 8px; }
+.ingreso { max-width: 420px; margin: 30px auto; }
+.cabeza-vista { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cabeza-vista .fila label { margin-bottom: 0; }
+.cabeza-vista input { padding: 7px 10px; }
+
+.cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0 14px; }
+.cifra { background: #fff; border: 1px solid var(--linea); border-radius: 12px; padding: 10px 14px; }
+.cifra b { display: block; font-size: 22px; color: var(--botella); }
+.cifra small { color: var(--texto-2); font-size: 13px; }
+
+.desliza { overflow-x: auto; padding: 10px; }
+.grilla { display: grid; gap: 6px; grid-auto-rows: minmax(64px, auto); min-width: 560px; }
+.g-cancha { padding: 4px 8px 8px; border-bottom: 2px solid var(--linea); }
+.g-cancha b { display: block; color: var(--botella); }
+.g-cancha small { color: var(--texto-2); font-size: 12px; }
+.g-hora { font-size: 12px; font-weight: 700; color: var(--texto-2); padding-top: 6px; }
+.g-libre { background: #f6faf8; color: #8fb3a6; border: 1px dashed #cfe2da; font-weight: 600; font-size: 13px; }
+.g-libre:hover:not(:disabled) { background: var(--ok-suave); color: var(--ok); border-color: var(--ok); }
+.g-libre.paso { background: #f7f8f8; color: #c4cccb; border-color: #eceff0; }
+.g-reserva { border-radius: 10px; padding: 8px 10px; background: #fff; border: 1px solid var(--linea);
+  border-left: 5px solid var(--ok); display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.g-reserva.PENDIENTE { border-left-color: #e0a100; background: #fffbef; }
+.g-reserva.PAGADA { border-left-color: var(--ok); background: #f1faf5; }
+.g-reserva.EN_CANCHA { border-left-color: var(--monaco); background: #f0fbfb; }
+.g-cab { display: flex; justify-content: space-between; gap: 2px 6px; flex-wrap: wrap; }
+.g-cab b { font-size: 14px; }
+.g-num { color: var(--texto-2); font-size: 12px; white-space: nowrap; }
+.g-cel { color: var(--botella); font-weight: 600; text-decoration: none; }
+.g-pie { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0 16px; }
+.kpi { background: var(--botella); color: #fff; border-radius: 14px; padding: 14px 16px; }
+.kpi small { color: var(--menta); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+.kpi b { display: block; font-size: 28px; margin: 4px 0 2px; }
+.kpi span { font-size: 12px; color: #cfe5de; }
+.barra-fila { display: grid; grid-template-columns: 110px 1fr 110px; gap: 10px; align-items: center; margin: 8px 0; font-size: 14px; }
+.b-nombre { font-weight: 600; }
+.b-pista { height: 14px; background: #e9f0ed; border-radius: 99px; overflow: hidden; }
+.b-relleno { display: block; height: 100%; background: linear-gradient(90deg, var(--ok), var(--menta)); border-radius: 99px; }
+.b-valor { text-align: right; color: var(--texto-2); font-size: 13px; }
+.columnas { display: flex; align-items: flex-end; gap: 6px; height: 190px; padding-top: 10px; overflow-x: auto; }
+.col { flex: 1 0 34px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.col-barra { width: 70%; min-height: 2px; background: var(--botella); border-radius: 6px 6px 0 0; }
+.col-n { font-size: 12px; font-weight: 700; color: var(--botella); }
+.col small { font-size: 11px; color: var(--texto-2); white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .cifras, .kpis { grid-template-columns: 1fr 1fr; }
+  .barra-fila { grid-template-columns: 90px 1fr 80px; }
+  .grilla { min-width: 0; grid-auto-rows: minmax(56px, auto); }
+  .desliza { padding: 6px; }
+}

@@ -40,7 +40,7 @@ de baja la cancha de prueba.
 | Carpeta | Peticiones | Pruebas | Qué demuestra |
 |---|---|---|---|
 | 0 · Salud | 2 | 6 | `GET /api/ping` de los dos proveedores, público |
-| 1 · Proveedor 1 (escenarios) | 9 | 27 | canchas, una cancha, 404 «Cancha no existe», horarios 06:00–22:00 los 7 días, 16 franjas de 1 h, cotización (60 000 y abono de 30 000), 400 fuera de horario y por menos de 60 min, escritura sin JWT → 401 |
+| 1 · Proveedor 1 (escenarios) | 9 | 27 | canchas, una cancha, 404 «Cancha no existe», horarios 14:00–22:00 los 7 días, 8 franjas de 1 h, cotización (60 000 y sin abono en vóley playa), 400 fuera de horario y por menos de 60 min, escritura sin JWT → 401 |
 | 2 · Proveedor 2 (reservas) | 13 | 21 | sin `X-Api-Key` o con clave errada → 401, crear directo → 201, misma hora y traslape parcial → 409 (doble reserva), horas que no son :00/:30 → 400, ocupación, cancelar con `PATCH` → la hora se libera y se puede volver a reservar, cancelar dos veces → 409 |
 | 3 · Consumidora | 17 | 36 | login admin y jugador, canchas (del P1), disponibilidad (franjas P1 − ocupación P2), reserva con JWT de jugador valorada por el P1, misma reserva → 409, mis reservas, sin token o token inválido → 401/403, cancha con jugador → 403, cancha con admin → creada en el P1 con el JWT reenviado, cancelar y ver la hora libre otra vez |
 | 5 · CRUD: eliminar y baja lógica | 14 | 24 | cierra el CRUD: crear cancha y horario, editar el horario (`PUT`), eliminarlo (`DELETE /api/horarios/{id}`; sin token → 401/403) y ver que ya no aparece; dar de baja la cancha (`PUT` con `activa=false`): deja de listarse pero el Proveedor 1 la conserva; reserva cancelada con `PATCH /api/reservas/{id}/estado` que se conserva como historial |

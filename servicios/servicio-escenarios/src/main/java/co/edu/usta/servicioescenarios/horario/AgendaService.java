@@ -69,13 +69,17 @@ public class AgendaService {
     if (!fin.isAfter(inicio)) {
       throw Errores.solicitudInvalida("horaFin debe ser mayor a horaInicio");
     }
-    if (!enPuntoOyMedia(inicio) || !enPuntoOyMedia(fin)) {
-      throw Errores.solicitudInvalida("Las horas deben ser en punto o y media");
-    }
     long minutos = Duration.between(inicio, fin).toMinutes();
     if (minutos < c.getDuracionMinimaMin()) {
       throw Errores.solicitudInvalida(
           "La reserva mínima es de " + c.getDuracionMinimaMin() + " minutos");
+    }
+    // Se reserva por horas completas: 1 o 2 horas, siempre en punto
+    if (!enPunto(inicio) || !enPunto(fin)) {
+      throw Errores.solicitudInvalida("Las horas deben ser en punto");
+    }
+    if (minutos != 60 && minutos != 120) {
+      throw Errores.solicitudInvalida("Solo se puede reservar 1 o 2 horas");
     }
     if (!LocalDateTime.of(fecha, inicio).isAfter(LocalDateTime.now(reloj))) {
       throw Errores.solicitudInvalida("No se puede reservar en un horario que ya pasó");
@@ -99,7 +103,7 @@ public class AgendaService {
         canchaId, fecha, inicio, fin, minutos, valorTotal, valorAbono, c.getHorasCancelacion());
   }
 
-  private static boolean enPuntoOyMedia(LocalTime t) {
-    return (t.getMinute() == 0 || t.getMinute() == 30) && t.getSecond() == 0 && t.getNano() == 0;
+  private static boolean enPunto(LocalTime t) {
+    return t.getMinute() == 0 && t.getSecond() == 0 && t.getNano() == 0;
   }
 }

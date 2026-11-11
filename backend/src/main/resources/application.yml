@@ -44,6 +44,10 @@ app:
     url: ${SERVICIO_PAGOS_URL:http://localhost:8085}
     api-key: ${PAGOS_API_KEY:clave-dev-portal-reservacancha}
     timeout-ms: ${SERVICIO_PAGOS_TIMEOUT_MS:15000}
+  # WhatsApp del complejo para el botón «Confirmar por WhatsApp» (solo dígitos, con 57). Va como
+  # variable de entorno, no en el repositorio; vacío = no se muestra el botón.
+  whatsapp:
+    numero: ${WHATSAPP_NUMERO:}
   # En Render: al arrancar, despierta a los proveedores (ver DespertarProveedores)
   despertar-proveedores: ${DESPERTAR_PROVEEDORES:false}
   wompi:

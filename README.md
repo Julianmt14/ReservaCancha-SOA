@@ -113,6 +113,8 @@ La aplicación también está publicada para probarla desde cualquier celular o 
   `reservacancha-dos-reservas` y `reservacancha-dos-pagos`. Render entrega el puerto en `PORT`.
 - Los secretos (`JWT_SECRET`, `RESERVAS_API_KEY`, `PAGOS_API_KEY` y las llaves de pruebas de Wompi) están en las
   variables de entorno de Render, no en el repositorio.
+- El número de WhatsApp del complejo (con el 57 adelante) va en `WHATSAPP_NUMERO` de la consumidora; si no
+  está, la página no muestra el botón «Confirmar por WhatsApp».
 - En el plan gratis cada servicio se duerme tras 15 minutos sin uso y tarda cerca de un minuto y medio en despertar:
   conviene abrir la página unos minutos antes de una demostración. Las bases H2 de esta versión se reinician cuando
   Render apaga el servicio (la persistencia en archivo se demuestra en local).
@@ -127,12 +129,13 @@ La aplicación también está publicada para probarla desde cualquier celular o 
 | POST / PUT | `/api/canchas` | ADMIN, PROPIETARIO | crear / editar (la baja es `activa=false`) |
 | GET | `/api/horarios/cancha/{id}` | JWT | horarios activos de la cancha |
 | POST / PUT / DELETE | `/api/horarios` | ADMIN, PROPIETARIO | crear / editar / dar de baja |
-| GET | `/api/disponibilidad?canchaId=&fecha=` | público | ocupadas + libres 06:00-22:00 (RNF-01 < 2,0 s) |
+| GET | `/api/disponibilidad?canchaId=&fecha=` | público | ocupadas + libres 14:00-22:00 (RNF-01 < 2,0 s) |
+| POST | `/api/reservas/rapida` | público | reservar sin cuenta con nombre y celular; devuelve la reserva, el token del jugador y el WhatsApp del complejo |
 | POST | `/api/reservas` | JWT | crear (valida horario y traslape → 409) |
 | GET | `/api/reservas/mias` | JWT | mis reservas |
 | GET | `/api/reservas/cancha/{id}` | JWT | ocupación desde hoy; el personal ve además quién reservó |
 | POST | `/api/reservas/{id}/cancelar` | dueño, ADMIN, PROPIETARIO | cancelar |
-| POST | `/api/pagos/iniciar/{reservaId}` | dueño, ADMIN, PROPIETARIO | referencia y firma de integridad Wompi |
+| POST | `/api/pagos/iniciar/{reservaId}` | dueño, ADMIN, PROPIETARIO | referencia y firma de integridad Wompi por el abono de la cancha (400 si la cancha no pide abono) |
 | POST | `/api/pagos/confirmar/{reservaId}?transactionId=` | dueño, ADMIN, PROPIETARIO | confirma consultando la transacción a Wompi |
 | GET | `/api/pagos/reserva/{reservaId}` | dueño, ADMIN, PROPIETARIO | pagos de la reserva |
 | POST | `/api/wompi/webhook` | secreto compartido | evento de Wompi |

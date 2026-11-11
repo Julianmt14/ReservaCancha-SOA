@@ -8,15 +8,27 @@ import java.time.Instant;
  * la entidad, nunca el hash de la contraseña (SEC-01).
  */
 public record UsuarioResumen(
-    Long id, String nombre, String email, String rol, Boolean activo, Instant creadoEn) {
+    Long id,
+    String nombre,
+    String email,
+    String celular,
+    String rol,
+    Boolean activo,
+    Instant creadoEn) {
 
   public static UsuarioResumen de(Usuario u) {
     return new UsuarioResumen(
-        u.getId(), u.getNombre(), u.getEmail(), u.getRol().name(), u.isActivo(), u.getCreadoEn());
+        u.getId(),
+        u.getNombre(),
+        u.getEmail(),
+        u.getCelular(),
+        u.getRol().name(),
+        u.isActivo(),
+        u.getCreadoEn());
   }
 
   /** La reserva menciona un usuario que ya no está en esta aplicación. */
   public static UsuarioResumen desconocido(Long id) {
-    return new UsuarioResumen(id, "Usuario " + id, null, null, null, null);
+    return new UsuarioResumen(id, "Usuario " + id, null, null, null, null, null);
   }
 }

@@ -1,15 +1,22 @@
 package co.edu.usta.reservacancha.reserva;
 
+import co.edu.usta.reservacancha.auth.AuthController.AuthResponse;
 import co.edu.usta.reservacancha.reservas.ReservaDto;
 import co.edu.usta.reservacancha.reservas.ReservasClient;
+import co.edu.usta.reservacancha.security.JwtService;
+import co.edu.usta.reservacancha.user.Clientes;
 import co.edu.usta.reservacancha.user.Usuario;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,16 +31,42 @@ public class ReservaController {
 
   private final ReservaOrquestador orquestador;
   private final ReservasClient reservas;
+  private final Clientes clientes;
+  private final JwtService jwt;
+  private final String whatsapp;
 
-  public ReservaController(ReservaOrquestador orquestador, ReservasClient reservas) {
+  public ReservaController(
+      ReservaOrquestador orquestador,
+      ReservasClient reservas,
+      Clientes clientes,
+      JwtService jwt,
+      @Value("${app.whatsapp.numero:}") String whatsapp) {
     this.orquestador = orquestador;
     this.reservas = reservas;
+    this.clientes = clientes;
+    this.jwt = jwt;
+    this.whatsapp = whatsapp;
   }
 
   @PostMapping
   public ReservaVista crear(
       @AuthenticationPrincipal Usuario usuario, @Valid @RequestBody CrearReserva req) {
     return orquestador.crear(usuario, req.canchaId(), req.fecha(), req.horaInicio(), req.horaFin());
+  }
+
+  /**
+   * Reserva sin cuenta: con nombre y celular. Se crea (o se reutiliza) el jugador de ese celular y,
+   * además de la reserva, se devuelve su token para ver «Mis reservas», cancelar y pagar, y el
+   * WhatsApp del complejo para el botón de confirmar.
+   */
+  @PostMapping("/rapida")
+  public ReservaRapidaVista rapida(@Valid @RequestBody ReservaRapida req) {
+    Usuario u = clientes.porCelular(req.nombre(), req.celular());
+    ReservaVista r =
+        orquestador.crear(u, req.canchaId(), req.fecha(), req.horaInicio(), req.horaFin());
+    AuthResponse sesion =
+        new AuthResponse(jwt.generate(u), u.getEmail(), u.getRol().name(), u.getId(), u.getNombre());
+    return new ReservaRapidaVista(r, sesion, whatsapp.isBlank() ? null : whatsapp);
   }
 
   @GetMapping("/mias")
@@ -98,4 +131,16 @@ public class ReservaController {
       @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
       @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaInicio,
       @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaFin) {}
+
+  public record ReservaRapida(
+      @NotBlank @Size(max = 60) String nombre,
+      @NotBlank
+          @Pattern(regexp = "3\\d{9}", message = "debe tener 10 dígitos y empezar por 3")
+          String celular,
+      @NotNull Long canchaId,
+      @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+      @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaInicio,
+      @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaFin) {}
+
+  public record ReservaRapidaVista(ReservaVista reserva, AuthResponse sesion, String whatsapp) {}
 }

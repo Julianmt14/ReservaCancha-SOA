@@ -1,11 +1,15 @@
 package co.edu.usta.reservacancha.pago;
 
+import co.edu.usta.reservacancha.escenarios.CanchaDto;
+import co.edu.usta.reservacancha.escenarios.EscenariosClient;
 import co.edu.usta.reservacancha.reserva.EstadoReserva;
 import co.edu.usta.reservacancha.reserva.ReservaOrquestador;
 import co.edu.usta.reservacancha.reserva.ReservaVista;
 import co.edu.usta.reservacancha.reservas.ReservaDto;
 import co.edu.usta.reservacancha.reservas.ReservasClient;
 import co.edu.usta.reservacancha.user.Usuario;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,14 +29,23 @@ public class PagoService {
   private final PagosClient pagos;
   private final ReservasClient reservas;
   private final ReservaOrquestador orquestador;
+  private final EscenariosClient escenarios;
 
-  public PagoService(PagosClient pagos, ReservasClient reservas, ReservaOrquestador orquestador) {
+  public PagoService(
+      PagosClient pagos,
+      ReservasClient reservas,
+      ReservaOrquestador orquestador,
+      EscenariosClient escenarios) {
+    this.escenarios = escenarios;
     this.pagos = pagos;
     this.reservas = reservas;
     this.orquestador = orquestador;
   }
 
-  /** Inicia el pago de una reserva PENDIENTE: registrarPago en el servicio de pagos. */
+  /**
+   * Inicia el pago del abono de una reserva PENDIENTE: el porcentaje lo pone el proveedor 1 en las
+   * reglas de la cancha. Si la cancha no pide abono (0 %), no hay nada que pagar en línea.
+   */
   public Map<String, Object> iniciarPago(Long reservaId, Usuario quien) {
     ReservaDto r = reservaAutorizada(reservaId, quien);
     if (r.estado() == EstadoReserva.CANCELADA) {
@@ -41,14 +54,29 @@ public class PagoService {
     if (r.estado() != EstadoReserva.PENDIENTE) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva ya fue pagada");
     }
-    IntencionPagoDto i = pagos.registrar(new RegistrarPagoRequest(r.id(), r.valorTotal()));
+    BigDecimal abono = abono(r);
+    IntencionPagoDto i = pagos.registrar(new RegistrarPagoRequest(r.id(), abono));
     return Map.of(
+        "valor", abono,
         "referencia", i.referencia(),
         "valorCentavos", i.valorCentavos(),
         "moneda", i.moneda(),
         "firmaIntegridad", i.firmaIntegridad(),
         "llavePublica", i.llavePublica(),
         "reservaId", r.id());
+  }
+
+  /** Valor del abono: porcentaje de la cancha sobre el valor total, redondeado a pesos. */
+  private BigDecimal abono(ReservaDto r) {
+    CanchaDto cancha = escenarios.cancha(r.canchaId());
+    int porcentaje = cancha.reglas() == null ? 100 : cancha.reglas().porcentajeAbono();
+    if (porcentaje <= 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Esta cancha no pide abono: se paga completo en la cancha");
+    }
+    return r.valorTotal()
+        .multiply(BigDecimal.valueOf(porcentaje))
+        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
   }
 
   /** Pagos de una reserva; solo su dueño o el personal del establecimiento. */

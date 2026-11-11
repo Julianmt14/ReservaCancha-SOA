@@ -290,6 +290,110 @@ class ReservaIntegrationTest {
     verifyNoInteractions(escenarios, reservas);
   }
 
+  // --- Reservar sin cuenta: nombre y celular ---
+
+  private ResultActions reservarRapida(String nombre, String celular, LocalDate fecha)
+      throws Exception {
+    String body =
+        json.writeValueAsString(
+            Map.of(
+                "nombre", nombre,
+                "celular", celular,
+                "canchaId", 1,
+                "fecha", fecha.toString(),
+                "horaInicio", "15:00",
+                "horaFin", "16:00"));
+    return mvc.perform(
+        post("/api/reservas/rapida").contentType(MediaType.APPLICATION_JSON).content(body));
+  }
+
+  private void proveedoresListos(LocalDate fecha) {
+    when(escenarios.cotizar(1L, fecha, LocalTime.of(15, 0), LocalTime.of(16, 0)))
+        .thenReturn(
+            new CotizacionDto(
+                1L,
+                fecha,
+                LocalTime.of(15, 0),
+                LocalTime.of(16, 0),
+                60,
+                new BigDecimal("60000.00"),
+                new BigDecimal("30000.00"),
+                3));
+    when(escenarios.cancha(1L)).thenReturn(CANCHA_1);
+    when(reservas.crear(any()))
+        .thenAnswer(
+            inv -> {
+              NuevaReservaRequest q = inv.getArgument(0);
+              Instant ahora = Instant.now();
+              return new ReservaDto(
+                  21L,
+                  q.usuarioId(),
+                  q.canchaId(),
+                  q.fecha(),
+                  q.horaInicio(),
+                  q.horaFin(),
+                  q.valorTotal(),
+                  EstadoReserva.PENDIENTE,
+                  ahora,
+                  ahora);
+            });
+  }
+
+  @Test
+  void sinCuentaConNombreYCelularReservaYRecibeSuSesion() throws Exception {
+    LocalDate fecha = LocalDate.now().plusDays(4);
+    proveedoresListos(fecha);
+
+    JsonNode r =
+        cuerpo(reservarRapida("Ana Gómez", "3001112233", fecha).andExpect(status().isOk()));
+
+    // La reserva queda a nombre del jugador del celular, con el valor cotizado
+    assertThat(r.get("reserva").get("estado").asText()).isEqualTo("PENDIENTE");
+    assertThat(r.get("reserva").get("valorTotal").decimalValue()).isEqualByComparingTo("60000");
+    assertThat(r.get("reserva").get("usuario").get("nombre").asText()).isEqualTo("Ana Gómez");
+    assertThat(r.get("reserva").get("usuario").get("celular").asText()).isEqualTo("3001112233");
+    assertThat(r.get("sesion").get("rol").asText()).isEqualTo("JUGADOR");
+
+    // Con el token que recibió ve sus reservas, sin haber creado cuenta
+    long id = r.get("sesion").get("id").asLong();
+    when(reservas.porUsuario(id))
+        .thenReturn(List.of(reserva(21L, id, fecha.atTime(15, 0), EstadoReserva.PENDIENTE)));
+    JsonNode mias =
+        cuerpo(
+            mvc.perform(
+                    get("/api/reservas/mias")
+                        .header("Authorization", "Bearer " + r.get("sesion").get("token").asText()))
+                .andExpect(status().isOk()));
+    assertThat(mias).hasSize(1);
+  }
+
+  @Test
+  void elMismoCelularEsElMismoJugador() throws Exception {
+    LocalDate fecha = LocalDate.now().plusDays(5);
+    proveedoresListos(fecha);
+
+    long primero =
+        cuerpo(reservarRapida("Luis", "3104445566", fecha).andExpect(status().isOk()))
+            .get("sesion")
+            .get("id")
+            .asLong();
+    JsonNode segundo =
+        cuerpo(reservarRapida("Luis Pérez", "3104445566", fecha).andExpect(status().isOk()));
+
+    assertThat(segundo.get("sesion").get("id").asLong()).isEqualTo(primero);
+    assertThat(segundo.get("sesion").get("nombre").asText()).isEqualTo("Luis Pérez");
+  }
+
+  @Test
+  void celularInvalidoResponde400YNoSeLlamaANingunProveedor() throws Exception {
+    JsonNode error =
+        cuerpo(
+            reservarRapida("Ana", "12345", LocalDate.now().plusDays(4))
+                .andExpect(status().isBadRequest()));
+    assertThat(error.toString()).contains("celular");
+    verifyNoInteractions(escenarios, reservas);
+  }
+
   // --- Cancelar: dueño o personal; regla de horasCancelacion del proveedor 1 ---
 
   @Test
@@ -529,6 +633,7 @@ class ReservaIntegrationTest {
     // El permiso se revisa en ReservaCancha: la solicitud ajena nunca llega a servicio-pagos
     verify(pagos, never()).registrar(any());
 
+    when(escenarios.cancha(1L)).thenReturn(CANCHA_1);
     when(pagos.registrar(any()))
         .thenReturn(
             new IntencionPagoDto(
@@ -539,6 +644,48 @@ class ReservaIntegrationTest {
                 .andExpect(status().isOk()));
     assertThat(res.get("firmaIntegridad").asText()).hasSize(64);
     assertThat(res.get("reservaId").asLong()).isEqualTo(50L);
+  }
+
+  @Test
+  void elPagoEnLineaEsSoloElAbonoQuePideLaCancha() throws Exception {
+    Sesion dueno = TestSupport.nuevoJugador(mvc, json);
+    when(reservas.una(51L))
+        .thenReturn(reserva(51L, dueno.id(), enDias(6, 20), EstadoReserva.PENDIENTE));
+    when(escenarios.cancha(1L)).thenReturn(CANCHA_1); // abono del 50 % sobre $60.000
+    when(pagos.registrar(any()))
+        .thenReturn(
+            new IntencionPagoDto(
+                2L, 51L, "RC-51-1", 3_000_000L, "COP", "b".repeat(64), "pub", "PENDIENTE"));
+
+    JsonNode res =
+        cuerpo(
+            mvc.perform(post("/api/pagos/iniciar/51").header("Authorization", dueno.bearer()))
+                .andExpect(status().isOk()));
+
+    ArgumentCaptor<co.edu.usta.reservacancha.pago.RegistrarPagoRequest> pedido =
+        ArgumentCaptor.forClass(co.edu.usta.reservacancha.pago.RegistrarPagoRequest.class);
+    verify(pagos).registrar(pedido.capture());
+    assertThat(pedido.getValue().valor()).isEqualByComparingTo("30000");
+    assertThat(res.get("valor").decimalValue()).isEqualByComparingTo("30000");
+  }
+
+  @Test
+  void unaCanchaSinAbonoNoSePagaEnLinea() throws Exception {
+    Sesion dueno = TestSupport.nuevoJugador(mvc, json);
+    when(reservas.una(52L))
+        .thenReturn(reserva(52L, dueno.id(), enDias(6, 20), EstadoReserva.PENDIENTE));
+    CanchaDto sinAbono =
+        new CanchaDto(
+            1L, 1L, "Cancha 1 — Sintética F5", "FUTBOL", "Fútbol 5", "Sintética",
+            "Villavicencio", new BigDecimal("60000.00"), true, new ReglasDto(60, 3, 0));
+    when(escenarios.cancha(1L)).thenReturn(sinAbono);
+
+    JsonNode error =
+        cuerpo(
+            mvc.perform(post("/api/pagos/iniciar/52").header("Authorization", dueno.bearer()))
+                .andExpect(status().isBadRequest()));
+    assertThat(error.get("error").asText()).contains("no pide abono");
+    verify(pagos, never()).registrar(any());
   }
 
   @Test

@@ -44,6 +44,9 @@ public class Usuario implements UserDetails {
   @Column(nullable = false)
   private Role rol = Role.JUGADOR;
 
+  // Celular del jugador que reserva sin cuenta (null en las cuentas con correo y contraseña)
+  private String celular;
+
   private boolean activo = true;
   private Instant creadoEn = Instant.now();
 
@@ -122,6 +125,14 @@ public class Usuario implements UserDetails {
 
   public void setRol(Role rol) {
     this.rol = rol;
+  }
+
+  public String getCelular() {
+    return celular;
+  }
+
+  public void setCelular(String celular) {
+    this.celular = celular;
   }
 
   public boolean isActivo() {

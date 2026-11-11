@@ -84,9 +84,10 @@ internas, `UNIQUE` y `CHECK`) y su semilla en `data.sql` (DML). Hibernate solo v
 | `canchas` | `id`, `establecimiento_id`, `nombre`, `deporte`, `tipo`, `superficie`, `ubicacion`, `precio_hora`, `duracion_minima_min`, `horas_cancelacion`, `porcentaje_abono`, `activa` | PK · FK `establecimiento_id → establecimientos` · `CHECK` `precio_hora ≥ 0`, `duracion_minima_min > 0`, `horas_cancelacion ≥ 0`, `porcentaje_abono` entre 0 y 100 |
 | `horarios` | `id`, `cancha_id`, `dia_semana`, `hora_apertura`, `hora_cierre`, `activo` | PK · FK `cancha_id → canchas` · `CHECK` `dia_semana IN (MONDAY..SUNDAY)`, `hora_cierre > hora_apertura` |
 
-Semilla: establecimiento 1 «ReservaCancha Villavicencio» (simulado); cancha 1 «Cancha 1 — Sintética F5»
-(Fútbol 5, $60 000/h) y cancha 2 «Cancha 2 — Sintética F8» (Fútbol 8, $90 000/h), las dos con reglas
-60 min / 3 h / 50 % y horario de 06:00 a 22:00 los siete días.
+Semilla: establecimiento 1 «Canchas Mónaco» (Villavicencio) con sus tres canchas: «Cancha 1 — Vóley playa»
+($60 000/h, sin abono), «Cancha 2 — Fútbol 7» ($90 000/h, abono 50 %) y «Cancha 3 — Fútbol 9»
+($120 000/h, abono 50 %). Todas con reserva mínima de 60 min, cancelación hasta 3 h antes y horario de
+14:00 a 22:00 los siete días.
 
 ### Proveedor 2 · servicio-reservas
 
@@ -132,12 +133,12 @@ Las horas salen como `"HH:mm:ss"`; las entradas aceptan `"HH:mm"` o `"HH:mm:ss"`
 `CanchaDto`:
 
 ```json
-{"id":1,"establecimientoId":1,"nombre":"Cancha 1 — Sintética F5","deporte":"FUTBOL","tipo":"Fútbol 5",
- "superficie":"Sintética","ubicacion":"Villavicencio","precioHora":60000.00,"activa":true,
+{"id":2,"establecimientoId":1,"nombre":"Cancha 2 — Fútbol 7","deporte":"FUTBOL","tipo":"Fútbol 7",
+ "superficie":"Sintética","ubicacion":"Villavicencio","precioHora":90000.00,"activa":true,
  "reglas":{"duracionMinimaMin":60,"horasCancelacion":3,"porcentajeAbono":50}}
 ```
 
-`HorarioDto`: `{"id":1,"canchaId":1,"diaSemana":"MONDAY","horaApertura":"06:00:00","horaCierre":"22:00:00","activo":true}`
+`HorarioDto`: `{"id":1,"canchaId":1,"diaSemana":"MONDAY","horaApertura":"14:00:00","horaCierre":"22:00:00","activo":true}`
 
 | Método | Ruta | Acceso | Respuesta |
 |---|---|---|---|
@@ -150,7 +151,7 @@ Las horas salen como `"HH:mm:ss"`; las entradas aceptan `"HH:mm"` o `"HH:mm:ss"`
 | POST | `/api/horarios` | JWT admin | 201 `HorarioDto`; body `{canchaId, diaSemana, horaApertura, horaCierre}`; 400 si cierre ≤ apertura; 404 cancha |
 | PUT | `/api/horarios/{id}` | JWT admin | 200 `HorarioDto`; 404 |
 | DELETE | `/api/horarios/{id}` | JWT admin | 204, baja lógica (`activo=false`); 404 |
-| GET | `/api/canchas/{id}/franjas?fecha=YYYY-MM-DD` | público | `{canchaId, fecha, abierta, franjas:[{inicio:"06:00",fin:"07:00"},…]}`: franjas de 1 h dentro del horario de ese día; sin horario → `abierta:false, franjas:[]`. No conoce la ocupación |
+| GET | `/api/canchas/{id}/franjas?fecha=YYYY-MM-DD` | público | `{canchaId, fecha, abierta, franjas:[{inicio:"14:00",fin:"15:00"},…]}`: franjas de 1 h dentro del horario de ese día; sin horario → `abierta:false, franjas:[]`. No conoce la ocupación |
 | GET | `/api/canchas/{id}/cotizacion?fecha=&horaInicio=&horaFin=` | público | Valida las reglas y calcula el valor: `{canchaId, fecha, horaInicio, horaFin, minutos, valorTotal, valorAbono, horasCancelacion}` |
 
 "JWT admin" = `Authorization: Bearer <JWT>` con rol `ROLE_ADMIN` o `ROLE_PROPIETARIO`.
@@ -288,9 +289,9 @@ constantes del código:
 |---|---|---|
 | Duración mínima | 60 minutos (`duracion_minima_min`) | cotización del P1 |
 | Bloques | horas en punto o y media (30 min) | cotización del P1 y creación en el P2 |
-| Horario de operación | 06:00–22:00, los 7 días (`horarios`) | franjas y cotización del P1 |
+| Horario de operación | 14:00–22:00, los 7 días (`horarios`) | franjas y cotización del P1 |
 | Cancelación | hasta 3 h antes del partido (`horas_cancelacion`), para jugadores | consumidora, con la regla del P1 |
-| Abono | 50 % del valor (`porcentaje_abono`) | cotización del P1 (`valorAbono`) |
+| Abono | 50 % en fútbol, 0 % en vóley playa (`porcentaje_abono`) | cotización del P1 (`valorAbono`); el pago en línea es solo el abono y la cancha sin abono se paga en el sitio |
 | Valor | `precio_hora × minutos / 60` | cotización del P1 |
 
 ---
@@ -417,12 +418,13 @@ reenvía a `POST :8085/api/pagos/notificaciones`. El servicio no llama de vuelta
 
 ## Alcance
 
-- **Un establecimiento simulado** («ReservaCancha Villavicencio») y un solo deporte, fútbol, con seis canchas
-  de precios, horarios y reglas distintos (fútbol 5, 6, 7, 8 y 11). El modelo admite más establecimientos y
-  deportes, pero no se gestionan desde la página.
+- **Un establecimiento: Canchas Mónaco** (Villavicencio), con tres canchas: vóley playa, fútbol 7 y fútbol 9.
+  El modelo admite más establecimientos y deportes, pero no se gestionan desde la página.
+- Los jugadores reservan **sin crear cuenta**, solo con nombre y celular; el personal entra con correo y contraseña.
 - Reservas con reglas por cancha, cancelación y disponibilidad integrada de los dos proveedores.
 - Pagos con Wompi **sandbox** como complemento opcional, no como requisito.
-- **Sin** WhatsApp, correos, SMS ni ningún otro tipo de notificación.
+- **Sin** notificaciones automáticas (correo, SMS o WhatsApp). La confirmación por WhatsApp la envía el propio
+  jugador con un botón que abre WhatsApp con el mensaje ya escrito para el número del complejo.
 
 ## Lo que sigue
 
